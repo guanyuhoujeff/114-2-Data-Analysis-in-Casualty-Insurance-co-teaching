@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>產險資料分析 — 車險理賠預測實戰</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ===========================================
+   VIEWPORT FITTING: MANDATORY BASE STYLES
+   =========================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+.slide {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+:root {
+  --title-size: clamp(1.8rem, 5vw, 3.8rem);
+  --h2-size: clamp(1.3rem, 3.5vw, 2.5rem);
+  --h3-size: clamp(1rem, 2.5vw, 1.6rem);
+  --body-size: clamp(0.75rem, 1.5vw, 1.1rem);
+  --small-size: clamp(0.6rem, 1vw, 0.85rem);
+  --slide-padding: clamp(1.5rem, 5vw, 5rem);
+  --content-gap: clamp(0.5rem, 2vw, 2rem);
+  --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+  /* Split Pastel palette */
+  --peach: #ffecd2;
+  --peach-dark: #ffd4a8;
+  --lavender: #e0d4f5;
+  --lavender-dark: #c9b8eb;
+  --mint: #b8f0c8;
+  --mint-dark: #4ade80;
+  --purple: #7c3aed;
+  --purple-light: #a78bfa;
+  --dark: #1a1a2e;
+  --dark-soft: #2d2d44;
+  --text: #333;
+  --text-light: #666;
+  --white: #ffffff;
+  --card-bg: rgba(255,255,255,0.85);
+}
+
+body {
+  font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+  color: var(--dark);
+  background: var(--peach);
+}
+
+/* ==================
+   LAYOUT HELPERS
+   ================== */
+
+/* Full-width centered content */
+.slide-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--slide-padding);
+  text-align: center;
+}
+
+/* Split layout */
+.slide-split {
+  display: flex;
+  flex-direction: row;
+}
+.slide-split .panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--slide-padding);
+  position: relative;
+}
+.panel-peach { background: var(--peach); }
+.panel-lavender { background: var(--lavender); }
+.panel-mint-soft { background: #e8fdf0; }
+.panel-dark { background: var(--dark); color: var(--white); }
+
+/* Grid overlay for panels */
+.grid-overlay::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: 0;
+  pointer-events: none;
+}
+.grid-overlay > * { position: relative; z-index: 1; }
+
+/* Dot overlay for dark panels */
+.dot-overlay::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: 0;
+  pointer-events: none;
+}
+.dot-overlay > * { position: relative; z-index: 1; }
+
+/* ==================
+   TYPOGRAPHY
+   ================== */
+h1 { font-size: var(--title-size); font-weight: 800; line-height: 1.15; }
+h2 { font-size: var(--h2-size); font-weight: 700; line-height: 1.2; }
+h3 { font-size: var(--h3-size); font-weight: 600; line-height: 1.3; }
+p, li { font-size: var(--body-size); line-height: 1.6; }
+.small { font-size: var(--small-size); }
+.highlight { color: var(--purple); }
+.cyan { color: #0ea5e9; }
+.mint-text { color: #059669; }
+.text-light { color: var(--text-light); }
+
+/* ==================
+   PHOTOS & DIAGRAMS
+   ================== */
+.photo-panel {
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.photo-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.photo-panel > * { position: relative; z-index: 1; }
+.photo-panel.dark-overlay::after { background: rgba(0,0,0,0.5); }
+.photo-panel.light-overlay::after { background: rgba(255,255,255,0.75); }
+.photo-panel.gradient-overlay::after {
+  background: linear-gradient(135deg, rgba(26,26,46,0.75) 0%, rgba(124,58,237,0.4) 100%);
+}
+
+.slide-photo {
+  width: 100%;
+  max-height: min(30vh, 240px);
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.diagram-box {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: clamp(0.6rem, 1.5vw, 1.2rem);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.diagram-box svg {
+  max-width: 100%;
+  max-height: min(38vh, 300px);
+}
+
+/* ==================
+   COMPONENTS
+   ================== */
+.tag {
+  display: inline-block;
+  background: var(--mint);
+  color: #1a3a2a;
+  font-size: var(--small-size);
+  font-weight: 600;
+  padding: 0.3em 1em;
+  border-radius: 100px;
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+  width: fit-content;
+}
+.tag-purple {
+  background: var(--lavender);
+  color: var(--purple);
+}
+.tag-peach {
+  background: var(--peach-dark);
+  color: #7c4a1a;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: clamp(1rem, 2.5vw, 2rem);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  max-width: min(90%, 500px);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+  width: 100%;
+  max-width: min(95vw, 900px);
+}
+
+.card-grid .card {
+  max-width: 100%;
+  text-align: left;
+}
+
+.info-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 0.5em;
+}
+.dot-peach { background: #ff9a56; }
+.dot-mint { background: var(--mint-dark); }
+.dot-purple { background: var(--purple-light); }
+.dot-cyan { background: #38bdf8; }
+
+.bullet-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.8vh, 0.7rem);
+  text-align: left;
+}
+.bullet-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.bullet-list li::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--purple);
+  flex-shrink: 0;
+  margin-top: 0.55em;
+}
+
+.quote-box {
+  background: var(--card-bg);
+  border-left: 4px solid var(--purple);
+  border-radius: 0 12px 12px 0;
+  padding: clamp(0.8rem, 2vw, 1.5rem);
+  font-size: var(--body-size);
+  color: var(--text);
+  max-width: min(90%, 600px);
+  font-style: italic;
+}
+
+/* Table */
+.slide-table {
+  border-collapse: collapse;
+  font-size: var(--small-size);
+  width: 100%;
+  max-width: min(95vw, 800px);
+}
+.slide-table th, .slide-table td {
+  padding: clamp(0.3rem, 0.8vw, 0.6rem) clamp(0.5rem, 1.2vw, 1rem);
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.slide-table th {
+  background: var(--lavender);
+  font-weight: 700;
+  color: var(--purple);
+}
+.slide-table tr:nth-child(even) { background: rgba(255,255,255,0.5); }
+
+/* Section divider */
+.section-num {
+  font-size: clamp(3rem, 10vw, 8rem);
+  font-weight: 800;
+  color: rgba(124,58,237,0.1);
+  position: absolute;
+  top: clamp(1rem, 3vw, 2rem);
+  right: clamp(1rem, 4vw, 3rem);
+  line-height: 1;
+  z-index: 0;
+}
+
+/* Meme / fun callout */
+.meme-box {
+  background: linear-gradient(135deg, #ffecd2 0%, #e0d4f5 100%);
+  border-radius: 16px;
+  padding: clamp(0.8rem, 2vw, 1.5rem);
+  font-size: var(--body-size);
+  max-width: min(90%, 550px);
+  text-align: center;
+  border: 2px dashed var(--purple-light);
+}
+
+/* Confusion matrix */
+.matrix-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
+  gap: 2px;
+  max-width: min(80%, 400px);
+  font-size: var(--small-size);
+  text-align: center;
+}
+.matrix-grid .header {
+  font-weight: 700;
+  padding: clamp(0.3rem, 0.8vw, 0.6rem);
+  color: var(--purple);
+}
+.matrix-grid .cell {
+  padding: clamp(0.4rem, 1vw, 0.8rem);
+  border-radius: 8px;
+  font-weight: 600;
+}
+.cell-green { background: #d1fae5; color: #065f46; }
+.cell-red { background: #fde2e2; color: #991b1b; }
+
+/* ==================
+   ANIMATIONS
+   ================== */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ==================
+   PROGRESS BAR
+   ================== */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--purple), var(--mint-dark));
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+
+/* Slide counter */
+.slide-counter {
+  position: fixed;
+  bottom: clamp(0.5rem, 2vw, 1.5rem);
+  right: clamp(0.5rem, 2vw, 1.5rem);
+  font-size: var(--small-size);
+  color: rgba(0,0,0,0.3);
+  z-index: 100;
+  font-weight: 600;
+}
+
+/* Nav hint */
+.nav-hint {
+  position: fixed;
+  bottom: clamp(0.5rem, 2vw, 1.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(0.5rem, 0.8vw, 0.7rem);
+  color: rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+/* ==================
+   RESPONSIVE
+   ================== */
+@media (max-width: 700px) {
+  .slide-split { flex-direction: column; }
+  .slide-split .panel { flex: none; min-height: 50vh; }
+}
+
+@media (max-height: 700px) {
+  :root {
+    --slide-padding: clamp(0.75rem, 3vw, 2rem);
+    --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+    --title-size: clamp(1.4rem, 4.5vw, 2.5rem);
+    --h2-size: clamp(1.1rem, 3vw, 1.75rem);
+  }
+}
+@media (max-height: 600px) {
+  :root {
+    --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+    --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+    --title-size: clamp(1.1rem, 4vw, 2rem);
+    --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+  }
+  .nav-hint, .section-num { display: none; }
+}
+@media (max-height: 500px) {
+  :root {
+    --slide-padding: clamp(0.4rem, 2vw, 1rem);
+    --title-size: clamp(1rem, 3.5vw, 1.5rem);
+    --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+    --body-size: clamp(0.65rem, 1vw, 0.85rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.2s !important;
+  }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-counter" id="slideCounter"></div>
+<div class="nav-hint">← → 或滾輪切換投影片</div>
+
+<!-- ====================================
+     SLIDE 1: TITLE (with car photo)
+     ==================================== -->
+<section class="slide slide-split" id="slide-1">
+  <div class="panel panel-peach">
+    <div class="tag reveal">AI × Insurance × Vibe Coding</div>
+    <h1 class="reveal reveal-delay-1">產險資料分析<br><span class="highlight">車險理賠預測實戰</span></h1>
+    <p class="text-light reveal reveal-delay-2" style="margin-top: var(--element-gap);">從 0 到 1，不寫程式也能做資料科學</p>
+  </div>
+  <div class="panel photo-panel gradient-overlay" style="align-items:center;background-image:url('https://images.unsplash.com/photo-1494905998402-395d579af36f?w=900&h=600&fit=crop&q=80');">
+    <div class="card reveal reveal-delay-2">
+      <h3 style="margin-bottom: var(--element-gap);">今日三堂課</h3>
+      <div style="display:flex;flex-direction:column;gap:clamp(0.3rem,0.8vh,0.6rem);">
+        <div style="display:flex;align-items:center;font-size:var(--body-size);"><span class="info-dot dot-peach"></span>第 1 節：看懂資料（EDA）</div>
+        <div style="display:flex;align-items:center;font-size:var(--body-size);"><span class="info-dot dot-mint"></span>第 2 節：建立預測模型</div>
+        <div style="display:flex;align-items:center;font-size:var(--body-size);"><span class="info-dot dot-purple"></span>第 3 節：動手挑戰＋報告</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 2: 自我介紹
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--lavender);" id="slide-2">
+  <span class="section-num">01</span>
+  <div class="tag reveal">講師介紹</div>
+  <h2 class="reveal reveal-delay-1">侯冠宇</h2>
+  <p class="text-light reveal reveal-delay-2" style="margin-top:var(--element-gap);margin-bottom:var(--content-gap);">金融 × AI 的交叉點</p>
+  <div class="card-grid reveal reveal-delay-3" style="max-width:min(95vw,700px);">
+    <div class="card" style="text-align:center;">
+      <h3 style="color:var(--purple);margin-bottom:0.3em;">🏢</h3>
+      <p style="font-weight:600;">喬泰科技</p>
+      <p class="small text-light">AI 系統架構師</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h3 style="color:var(--purple);margin-bottom:0.3em;">🎓</h3>
+      <p style="font-weight:600;">高科大博士生</p>
+      <p class="small text-light">財務金融領域</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h3 style="color:var(--purple);margin-bottom:0.3em;">🎯</h3>
+      <p style="font-weight:600;">專長</p>
+      <p class="small text-light">金融 × AI 應用</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 3: 什麼是資料科學 (Netflix photo)
+     ==================================== -->
+<section class="slide slide-split" id="slide-3">
+  <div class="panel panel-peach">
+    <div class="tag reveal">核心理念</div>
+    <h2 class="reveal reveal-delay-1">什麼是<span class="highlight">資料科學</span>？</h2>
+    <p class="text-light reveal reveal-delay-2" style="margin-top:var(--element-gap);">你每天都在經歷的事情...</p>
+    <img class="slide-photo reveal reveal-delay-3" src="https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=600&h=340&fit=crop&q=80" alt="Person watching TV streaming" style="margin-top:var(--content-gap);">
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <div class="card reveal reveal-delay-2" style="text-align:left;">
+      <p style="font-size:var(--body-size);margin-bottom:var(--element-gap);">
+        <strong>Netflix 推薦系統</strong>
+      </p>
+      <p style="font-size:var(--small-size);color:var(--text-light);">
+        昨天不小心看了一部韓劇<br>→ 今天首頁全部變成韓劇
+      </p>
+      <div style="margin:var(--content-gap) 0;height:1px;background:rgba(0,0,0,0.08);"></div>
+      <p style="font-size:var(--small-size);color:var(--text);">
+        蒐集觀看紀錄 → 找到口味相似的人 → 推薦
+      </p>
+      <p style="font-size:var(--small-size);font-weight:600;color:var(--purple);margin-top:var(--element-gap);">
+        蒐集資料 → 分析規律 → 做出決策<br>＝ 資料科學
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 4: 資料科學核心流程
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-4">
+  <div class="tag tag-purple reveal">核心流程</div>
+  <h2 class="reveal reveal-delay-1">資料科學的本質</h2>
+  <p class="text-light reveal reveal-delay-2" style="margin-bottom:var(--content-gap);">不管場景怎麼變，流程都一樣</p>
+  <div style="display:flex;align-items:center;gap:clamp(0.3rem,1vw,0.8rem);flex-wrap:wrap;justify-content:center;" class="reveal reveal-delay-3">
+    <span class="tag tag-peach">提出問題</span>
+    <span style="font-size:var(--body-size);color:var(--text-light);">→</span>
+    <span class="tag tag-peach">蒐集資料</span>
+    <span style="font-size:var(--body-size);color:var(--text-light);">→</span>
+    <span class="tag tag-peach">分析資料</span>
+    <span style="font-size:var(--body-size);color:var(--text-light);">→</span>
+    <span class="tag tag-peach">產生洞察</span>
+    <span style="font-size:var(--body-size);color:var(--text-light);">→</span>
+    <span class="tag" style="background:var(--mint-dark);color:white;">做出決策</span>
+  </div>
+  <div class="card-grid reveal reveal-delay-4" style="margin-top:var(--content-gap);max-width:min(90vw,600px);">
+    <div class="card" style="text-align:center;">
+      <p class="small" style="font-weight:600;">Netflix</p>
+      <p class="small text-light">推薦什麼片給你</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p class="small" style="font-weight:600;">保險公司</p>
+      <p class="small text-light">這個客戶收多少保費</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 5: 資料探勘 (shopping photo)
+     ==================================== -->
+<section class="slide slide-split" id="slide-5">
+  <div class="panel photo-panel dark-overlay" style="align-items:center;background-image:url('https://images.unsplash.com/photo-1735212769704-d03b95dd1a14?w=900&h=600&fit=crop&q=80');">
+    <div class="card reveal" style="text-align:left;">
+      <p style="font-size:var(--body-size);font-weight:600;margin-bottom:var(--element-gap);">蝦皮推薦</p>
+      <p style="font-size:var(--small-size);color:var(--text-light);">搜尋「手機殼」</p>
+      <p style="font-size:var(--small-size);color:var(--text-light);">↓</p>
+      <p style="font-size:var(--small-size);color:var(--text-light);">「買了這個的人也買了：<br>螢幕保護貼、充電線、氣囊支架」</p>
+      <div style="margin:var(--element-gap) 0;height:1px;background:rgba(0,0,0,0.08);"></div>
+      <p style="font-size:var(--small-size);color:var(--purple);font-weight:600;">
+        60% 買手機殼的人也會買螢幕保護貼<br>→ 隱藏的規律！
+      </p>
+    </div>
+  </div>
+  <div class="panel panel-peach">
+    <div class="tag tag-purple reveal">Data Mining</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">資料探勘</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      從大量資料裡面挖出隱藏規律<br>Mining＝挖礦，從砂石中淘出金子
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small" style="font-weight:600;">保險業的金子 🏆</p>
+      <p class="small">年輕 + 超速紀錄 + 跑車 = 高風險 → 加費！</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 6: 連結到產險
+     ==================================== -->
+<section class="slide slide-center" style="background:linear-gradient(135deg, var(--peach) 0%, var(--lavender) 100%);" id="slide-6">
+  <h2 class="reveal">同一套邏輯，不同場景</h2>
+  <div class="card-grid reveal reveal-delay-1" style="margin-top:var(--content-gap);max-width:min(90vw,700px);">
+    <div class="card" style="text-align:center;">
+      <p style="font-weight:700;color:var(--purple);">Netflix</p>
+      <p class="small text-light">預測「你想看什麼片」</p>
+      <p class="small text-light" style="margin-top:0.3em;">猜錯 → 看到一部爛片</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-weight:700;color:var(--purple);">產險公司</p>
+      <p class="small text-light">預測「客戶會不會出車禍」</p>
+      <p class="small text-light" style="margin-top:0.3em;">猜錯 → 賠到脫褲 💸</p>
+    </div>
+  </div>
+  <div class="quote-box reveal reveal-delay-2" style="margin-top:var(--content-gap);">
+    <p>為什麼財金系需要懂？金融業是最早擁抱資料科學的產業之一。<br>面試時說「我會用 AI 做資料分析」比「我會用 Excel 拉樞紐」吸引人。</p>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 7: 今天的目標
+     ==================================== -->
+<section class="slide slide-split" id="slide-7">
+  <div class="panel panel-peach">
+    <span class="section-num" style="color:rgba(124,58,237,0.08);">📋</span>
+    <div class="tag reveal">今日目標</div>
+    <h2 class="reveal reveal-delay-1">用 AI 工具，完成<br><span class="highlight">完整的車險理賠資料分析</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      全程不需要自己寫程式碼
+    </p>
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:clamp(0.5rem,1.5vh,1rem);max-width:min(90%,380px);">
+      <div class="card reveal reveal-delay-1" style="max-width:100%;">
+        <p style="font-size:var(--body-size);"><span class="info-dot dot-peach"></span><strong>第 1 節：看懂資料</strong></p>
+        <p class="small text-light">AI 工具 + EDA 探索 + Demo</p>
+      </div>
+      <div class="card reveal reveal-delay-2" style="max-width:100%;">
+        <p style="font-size:var(--body-size);"><span class="info-dot dot-mint"></span><strong>第 2 節：建立模型</strong></p>
+        <p class="small text-light">Logistic Regression + 四大模型</p>
+      </div>
+      <div class="card reveal reveal-delay-3" style="max-width:100%;">
+        <p style="font-size:var(--body-size);"><span class="info-dot dot-purple"></span><strong>第 3 節：動手挑戰</strong></p>
+        <p class="small text-light">自選模型實作 + 精算報告</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 8: 核心觀念
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--dark);" id="slide-8">
+  <div class="tag reveal" style="background:var(--purple);color:white;">核心觀念</div>
+  <h2 class="reveal reveal-delay-1" style="color:white;margin-top:var(--content-gap);">
+    你不需要會寫程式<br>但你需要<span style="color:var(--mint-dark);">懂概念</span>
+  </h2>
+  <p class="reveal reveal-delay-2" style="color:rgba(255,255,255,0.5);margin-top:var(--element-gap);font-size:var(--body-size);">
+    AI 負責執行，你負責判斷
+  </p>
+  <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);">
+    <p class="small" style="color:rgba(255,255,255,0.7);">就像你不需要會蓋房子，但要看得懂設計圖<br>不然你會住進一間廁所比客廳大的房子 🏠</p>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 9: AI 工具
+     ==================================== -->
+<section class="slide slide-split" id="slide-9">
+  <div class="panel panel-peach">
+    <div class="tag reveal">Vibe Coding</div>
+    <h2 class="reveal reveal-delay-1">AI 工具：<br><span class="highlight">不寫程式也能分析</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      用自然語言驅動程式開發<br>中文下指令，AI 幫你寫 Python
+    </p>
+  </div>
+  <div class="panel panel-mint-soft grid-overlay" style="align-items:center;">
+    <div class="card reveal reveal-delay-2" style="text-align:left;max-width:min(90%,420px);">
+      <h3 style="margin-bottom:var(--element-gap);color:var(--purple);">Google Antigravity</h3>
+      <ul class="bullet-list">
+        <li>Vibe Coding 平台 — AI Agent 幫你寫程式</li>
+        <li>自然語言寫程式、跑資料、畫圖</li>
+        <li>免費、免安裝、跨平台</li>
+      </ul>
+      <div style="margin-top:var(--element-gap);padding:clamp(0.4rem,1vw,0.7rem);background:rgba(124,58,237,0.06);border-radius:10px;">
+        <p style="font-size:var(--small-size);font-weight:700;color:var(--purple);margin-bottom:0.3em;">🔗 官方 & 教學資源</p>
+        <p style="font-size:clamp(0.55rem,0.9vw,0.75rem);color:var(--text-light);line-height:1.7;">
+          <strong>官方網站</strong>：antigravity.google<br>
+          <strong>下載</strong>：antigravity.google/download<br>
+          <strong>快速上手</strong>：Google Codelabs 教學<br>
+          <strong>教學影片</strong>：Codecademy 圖文教程<br>
+          <strong>進階</strong>：Real Python 指南
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 9b: Antigravity 資源連結
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-9b">
+  <div class="tag tag-purple reveal">📎 資源連結</div>
+  <h2 class="reveal reveal-delay-1">開始使用 <span class="highlight">Antigravity</span></h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(95vw,850px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.4em;">🌐 官方網站</p>
+      <p style="font-size:var(--small-size);color:var(--text);font-weight:600;">antigravity.google</p>
+      <p class="small text-light" style="margin-top:0.2em;">免費、跨平台（Mac / Win / Linux）</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.4em;">🚀 快速上手</p>
+      <p style="font-size:var(--small-size);color:var(--text);">Google Codelabs 官方教學</p>
+      <p class="small text-light" style="margin-top:0.2em;">codelabs.developers.google.com</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.4em;">📖 圖文教程</p>
+      <p style="font-size:var(--small-size);color:var(--text);">Codecademy 設定與使用指南</p>
+      <p class="small text-light" style="margin-top:0.2em;">codecademy.com/article/...</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.4em;">🐍 Python 整合</p>
+      <p style="font-size:var(--small-size);color:var(--text);">Real Python 進階指南</p>
+      <p class="small text-light" style="margin-top:0.2em;">realpython.com/ref/ai-coding-tools/</p>
+    </div>
+  </div>
+  <p class="small text-light reveal reveal-delay-3" style="margin-top:var(--content-gap);">💡 今天課堂上直接用瀏覽器開 antigravity.google 就可以了！</p>
+</section>
+
+<!-- ====================================
+     SLIDE 10: AI 注意事項
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--lavender);" id="slide-10">
+  <div class="tag tag-peach reveal">⚠️ 預防針</div>
+  <h2 class="reveal reveal-delay-1">AI 很強，但它會<span class="highlight">自信地犯錯</span></h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(95vw,850px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:#dc2626;margin-bottom:0.3em;">① AI 會犯錯</p>
+      <p class="small text-light">程式碼可能有 bug<br>統計解讀可能是錯的</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">② 怎麼驗證</p>
+      <p class="small text-light">挑一個數字，自己算一次<br>看軸標籤、數值範圍</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:#059669;margin-bottom:0.3em;">③ 學術誠信</p>
+      <p class="small text-light">AI 是工具，不是代寫槍手<br>你要能解釋每個結果</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 11: EDA 觀念
+     ==================================== -->
+<section class="slide slide-split" id="slide-11">
+  <div class="panel panel-lavender">
+    <span class="section-num">EDA</span>
+    <div class="tag reveal">Exploratory Data Analysis</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">探索性</span>資料分析</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      在建模之前先「認識你的資料」
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">就像去陌生城市，先打開 Google Maps 🗺️<br>跳過 EDA 直接建模 ＝ 不看地圖就開車</p>
+    </div>
+  </div>
+  <div class="panel photo-panel light-overlay" style="align-items:center;background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&h=600&fit=crop&q=80');">
+    <div style="display:flex;align-items:center;gap:clamp(0.3rem,0.8vw,0.5rem);flex-wrap:wrap;justify-content:center;margin-bottom:var(--content-gap);" class="reveal reveal-delay-2">
+      <span class="tag tag-peach">資料取得</span>
+      <span class="small text-light">→</span>
+      <span class="tag" style="background:var(--purple);color:white;">EDA</span>
+      <span class="small text-light">→</span>
+      <span class="tag tag-peach">建模</span>
+      <span class="small text-light">→</span>
+      <span class="tag tag-peach">驗證</span>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 12: EDA 陷阱
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-12">
+  <div class="tag tag-peach reveal">⚡ 常見陷阱</div>
+  <h2 class="reveal reveal-delay-1">EDA 三大陷阱</h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(95vw,900px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">陷阱一：只看平均數</p>
+      <p class="small text-light">平均理賠 10 萬 → 其實 90% 不到 1 萬<br>1% 超過 500 萬，被極端值拉高</p>
+      <p class="small" style="margin-top:0.4em;color:var(--text-light);font-style:italic;">你跟馬雲的「平均資產」有幾百億 💰</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">陷阱二：忽略缺失值</p>
+      <p class="small text-light">客戶漏填收入、信用分數沒有<br>不處理 → 畫圖和建模都出問題</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <img src="https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=400&h=180&fit=crop&q=80" alt="Ice cream" style="width:100%;height:auto;max-height:min(12vh,100px);object-fit:cover;border-radius:8px;margin-bottom:0.4em;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">陷阱三：相關 ≠ 因果</p>
+      <p class="small text-light">冰淇淋銷量 ↔ 溺水人數 高度相關<br>是因為夏天，不是冰淇淋害人溺水</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 13: Demo 資料載入
+     ==================================== -->
+<section class="slide slide-split" id="slide-13">
+  <div class="panel panel-peach">
+    <div class="tag reveal">Demo</div>
+    <h2 class="reveal reveal-delay-1">資料載入<br><span class="highlight">與清理</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      Kaggle 車險資料集<br>一萬筆客戶 × 19 個欄位
+    </p>
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:clamp(0.4rem,1vh,0.8rem);max-width:min(90%,400px);">
+      <div class="card reveal reveal-delay-1" style="max-width:100%;font-size:var(--small-size);">
+        <strong>Step 1</strong> — 印出前 5 筆 + 欄位型態
+      </div>
+      <div class="card reveal reveal-delay-2" style="max-width:100%;font-size:var(--small-size);">
+        <strong>Step 2</strong> — 檢查缺失值<br>
+        <span class="text-light">→ CREDIT_SCORE、ANNUAL_MILEAGE</span>
+      </div>
+      <div class="card reveal reveal-delay-3" style="max-width:100%;font-size:var(--small-size);">
+        <strong>Step 3</strong> — 填補/刪除缺失值<br>
+        <span class="text-light">→ 中位數填補 / 刪除列</span>
+      </div>
+      <div class="card reveal reveal-delay-4" style="max-width:100%;font-size:var(--small-size);">
+        <strong>Step 4</strong> — 驗證清理結果 ✅
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 14: Demo 視覺化探索
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);position:relative;" id="slide-14">
+  <div style="position:absolute;top:0;right:0;width:40%;height:100%;background-image:url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=900&fit=crop&q=80');background-size:cover;background-position:center;opacity:0.12;z-index:0;"></div>
+  <div class="tag reveal" style="position:relative;z-index:1;">Demo</div>
+  <h2 class="reveal reveal-delay-1" style="position:relative;z-index:1;">視覺化探索</h2>
+  <p class="text-light reveal reveal-delay-2" style="margin-bottom:var(--content-gap);position:relative;z-index:1;">一張好的圖表勝過一千行數字</p>
+  <div class="card-grid reveal reveal-delay-3" style="max-width:min(95vw,900px);">
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">📊</p>
+      <p class="small" style="font-weight:600;">描述統計</p>
+      <p class="small text-light">平均值、標準差</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">📈</p>
+      <p class="small" style="font-weight:600;">風險輪廓長條圖</p>
+      <p class="small text-light">年齡 vs 理賠機率</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">📦</p>
+      <p class="small" style="font-weight:600;">箱形圖</p>
+      <p class="small text-light">駕齡 vs 年里程</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">🔥</p>
+      <p class="small" style="font-weight:600;">相關性熱力圖</p>
+      <p class="small text-light">變數間關聯</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">🎯</p>
+      <p class="small" style="font-weight:600;">交叉分組熱力圖</p>
+      <p class="small text-light">年齡 × 車齡 理賠率</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 15: Vibe Coding 威力
+     ==================================== -->
+<section class="slide slide-center" style="background:linear-gradient(135deg, var(--peach) 0%, var(--lavender) 100%);" id="slide-15">
+  <h2 class="reveal">全程<span class="highlight">零行程式碼</span></h2>
+  <p class="text-light reveal reveal-delay-1" style="margin-top:var(--element-gap);font-size:var(--body-size);">
+    全部用中文告訴 AI 要做什麼
+  </p>
+  <div class="meme-box reveal reveal-delay-2" style="margin-top:var(--content-gap);">
+    <p style="font-size:var(--h3-size);font-weight:700;">這就是 Vibe Coding 的威力 ⚡</p>
+  </div>
+  <p class="small text-light reveal reveal-delay-3" style="margin-top:var(--content-gap);">休息 10 分鐘，回來建模！</p>
+</section>
+
+<!-- ====================================
+     SLIDE 16: 第 2 節 — 分隔頁
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--dark);" id="slide-16">
+  <span class="section-num" style="color:rgba(255,255,255,0.05);font-size:clamp(5rem,15vw,12rem);">02</span>
+  <div class="tag reveal" style="background:var(--mint-dark);color:white;">第 2 節</div>
+  <h1 class="reveal reveal-delay-1" style="color:white;margin-top:var(--element-gap);">
+    建立<span style="color:var(--mint-dark);">預測模型</span>
+  </h1>
+  <p class="reveal reveal-delay-2" style="color:rgba(255,255,255,0.4);margin-top:var(--element-gap);">Benchmark + 四大分類模型</p>
+</section>
+
+<!-- ====================================
+     SLIDE 17: Benchmark 概念
+     ==================================== -->
+<section class="slide slide-split" id="slide-17">
+  <div class="panel panel-lavender">
+    <div class="tag reveal">Benchmark</div>
+    <h2 class="reveal reveal-delay-1">為什麼需要<br><span class="highlight">基準模型</span>？</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      先建一個比較基準<br>才知道進階模型好多少
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">第一次去健身房就挑最重的啞鈴<br>→ 結果手斷了 💪😵</p>
+    </div>
+  </div>
+  <div class="panel photo-panel dark-overlay" style="align-items:center;background-image:url('https://images.unsplash.com/photo-1544033527-b192daee1f5b?w=900&h=600&fit=crop&q=80');">
+    <div class="card reveal reveal-delay-2" style="text-align:center;">
+      <h3 style="color:var(--purple);margin-bottom:var(--element-gap);">Logistic Regression</h3>
+      <p style="font-size:var(--body-size);margin-bottom:0.5em;">分類模型界的「白飯」🍚</p>
+      <p class="small text-light">不花俏，但穩、能飽<br>而且大家都吃得懂</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 18: 資料前處理
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-18">
+  <div class="tag tag-purple reveal">前處理</div>
+  <h2 class="reveal reveal-delay-1">建模前的準備</h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(90vw,700px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">One-Hot Encoding</p>
+      <p class="small text-light">類別變數（16-25、26-39）<br>→ 轉成 0 和 1，模型才看得懂</p>
+      <p class="small" style="margin-top:0.3em;font-style:italic;color:var(--text-light);">像把中文翻譯成模型的語言</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);margin-bottom:0.3em;">Train / Test Split</p>
+      <p class="small text-light">80% 訓練（學習）<br>20% 測試（考試）</p>
+      <p class="small" style="margin-top:0.3em;font-style:italic;color:var(--text-light);">用考試題目教課 ＝ 作弊</p>
+    </div>
+  </div>
+  <p class="small text-light reveal reveal-delay-3" style="margin-top:var(--content-gap);">random_state=42 → 「生命、宇宙以及一切的終極答案」🌌</p>
+</section>
+
+<!-- ====================================
+     SLIDE 19: 解讀結果
+     ==================================== -->
+<section class="slide slide-split" id="slide-19">
+  <div class="panel panel-peach">
+    <div class="tag reveal">解讀結果</div>
+    <h2 class="reveal reveal-delay-1">係數 &<br><span class="highlight">p-value</span></h2>
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:clamp(0.4rem,1vh,0.8rem);max-width:min(90%,400px);">
+      <div class="card reveal" style="max-width:100%;text-align:left;">
+        <p style="font-weight:700;color:#059669;font-size:var(--body-size);">係數為正 ↑</p>
+        <p class="small text-light">變數越大 → 理賠機率越高</p>
+      </div>
+      <div class="card reveal reveal-delay-1" style="max-width:100%;text-align:left;">
+        <p style="font-weight:700;color:#dc2626;font-size:var(--body-size);">係數為負 ↓</p>
+        <p class="small text-light">變數越大 → 理賠機率越低</p>
+      </div>
+      <div class="card reveal reveal-delay-2" style="max-width:100%;text-align:left;">
+        <p style="font-weight:700;color:var(--purple);font-size:var(--body-size);">p-value < 0.05</p>
+        <p class="small text-light">顯著 — 有統計證據說它有幫助</p>
+      </div>
+      <div class="card reveal reveal-delay-3" style="max-width:100%;text-align:left;">
+        <p style="font-weight:700;color:var(--text-light);font-size:var(--body-size);">p-value > 0.05</p>
+        <p class="small text-light">不顯著 — 可能只是雜訊</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 20: 評估指標
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-20">
+  <div class="tag reveal">模型好不好？</div>
+  <h2 class="reveal reveal-delay-1">四大評估指標</h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(95vw,900px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);">Accuracy</p>
+      <p class="small text-light">整體猜對的比例<br>→ 我們的 benchmark 基準</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);">Precision</p>
+      <p class="small text-light">說「會理賠」的人<br>真的有理賠的比例</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);">Recall ⭐</p>
+      <p class="small text-light">真的有理賠的人<br>模型猜對了幾個</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:700;color:var(--purple);">F1-Score</p>
+      <p class="small text-light">Precision × Recall<br>的調和平均</p>
+    </div>
+  </div>
+  <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+    <p class="small">氣象預報員每天說「明天不會地震」→ 準確率 99.99%<br>但對你完全沒有幫助 🌍</p>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 21: 混淆矩陣
+     ==================================== -->
+<section class="slide slide-split" id="slide-21">
+  <div class="panel panel-lavender" style="align-items:center;">
+    <div class="tag tag-purple reveal">Confusion Matrix</div>
+    <h2 class="reveal reveal-delay-1" style="margin-bottom:var(--content-gap);">混淆矩陣</h2>
+    <div class="matrix-grid reveal reveal-delay-2">
+      <div></div>
+      <div class="header">預測：有理賠</div>
+      <div class="header">預測：沒理賠</div>
+      <div class="header">實際：有</div>
+      <div class="cell cell-green">TP ✅<br><span class="small">猜對了</span></div>
+      <div class="cell cell-red">FN ❌<br><span class="small">漏網之魚</span></div>
+      <div class="header">實際：沒</div>
+      <div class="cell cell-red">FP ❌<br><span class="small">虛驚一場</span></div>
+      <div class="cell cell-green">TN ✅<br><span class="small">猜對了</span></div>
+    </div>
+  </div>
+  <div class="panel panel-peach" style="align-items:center;">
+    <div class="card reveal reveal-delay-3" style="text-align:left;">
+      <h3 style="color:#dc2626;margin-bottom:var(--element-gap);">FN 比 FP 嚴重！</h3>
+      <ul class="bullet-list" style="font-size:var(--small-size);">
+        <li>FP：你以為他偷吃，結果沒有 → 虛驚一場</li>
+        <li>FN：你以為沒偷吃，結果偷吃了 → 傷害已造成</li>
+      </ul>
+      <div style="margin-top:var(--element-gap);padding:0.5em;background:rgba(124,58,237,0.08);border-radius:8px;">
+        <p class="small" style="font-weight:600;color:var(--purple);">產險領域：Recall 比 Precision 重要</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 22: Decision Tree
+     ==================================== -->
+<section class="slide slide-split" id="slide-22">
+  <div class="panel panel-peach">
+    <div class="tag reveal">Model 1</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">Decision Tree</span><br>決策樹</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      你每天都在用的模型
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">肚子很餓嗎？→ 是 → 有錢嗎？<br>→ 沒有 → 吃泡麵 🍜</p>
+    </div>
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <!-- SVG Decision Tree diagram -->
+    <div class="diagram-box reveal reveal-delay-1" style="margin-bottom:var(--element-gap);max-width:min(90%,420px);">
+      <svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Lines -->
+        <line x1="180" y1="38" x2="90" y2="98" stroke="#a78bfa" stroke-width="2"/>
+        <line x1="180" y1="38" x2="270" y2="98" stroke="#a78bfa" stroke-width="2"/>
+        <line x1="90" y1="118" x2="45" y2="168" stroke="#a78bfa" stroke-width="2"/>
+        <line x1="90" y1="118" x2="135" y2="168" stroke="#a78bfa" stroke-width="2"/>
+        <line x1="270" y1="118" x2="225" y2="168" stroke="#a78bfa" stroke-width="2"/>
+        <line x1="270" y1="118" x2="315" y2="168" stroke="#a78bfa" stroke-width="2"/>
+        <!-- Root -->
+        <rect x="130" y="12" width="100" height="30" rx="8" fill="#7c3aed"/>
+        <text x="180" y="32" text-anchor="middle" fill="white" font-size="11" font-family="Outfit">年齡 < 25?</text>
+        <!-- Level 2 -->
+        <rect x="40" y="88" width="100" height="30" rx="8" fill="#a78bfa"/>
+        <text x="90" y="108" text-anchor="middle" fill="white" font-size="10" font-family="Outfit">超速紀錄?</text>
+        <rect x="220" y="88" width="100" height="30" rx="8" fill="#a78bfa"/>
+        <text x="270" y="108" text-anchor="middle" fill="white" font-size="10" font-family="Outfit">駕齡 > 10?</text>
+        <!-- Leaves -->
+        <rect x="10" y="160" width="70" height="26" rx="6" fill="#fde2e2"/>
+        <text x="45" y="177" text-anchor="middle" fill="#991b1b" font-size="10" font-weight="600" font-family="Outfit">高風險</text>
+        <rect x="100" y="160" width="70" height="26" rx="6" fill="#d1fae5"/>
+        <text x="135" y="177" text-anchor="middle" fill="#065f46" font-size="10" font-weight="600" font-family="Outfit">中風險</text>
+        <rect x="190" y="160" width="70" height="26" rx="6" fill="#d1fae5"/>
+        <text x="225" y="177" text-anchor="middle" fill="#065f46" font-size="10" font-weight="600" font-family="Outfit">低風險</text>
+        <rect x="280" y="160" width="70" height="26" rx="6" fill="#d1fae5"/>
+        <text x="315" y="177" text-anchor="middle" fill="#065f46" font-size="10" font-weight="600" font-family="Outfit">低風險</text>
+        <!-- Labels -->
+        <text x="125" y="65" text-anchor="middle" fill="#666" font-size="9" font-family="Outfit">Yes</text>
+        <text x="235" y="65" text-anchor="middle" fill="#666" font-size="9" font-family="Outfit">No</text>
+      </svg>
+    </div>
+    <div class="card reveal reveal-delay-2" style="text-align:left;max-width:min(90%,380px);">
+      <p style="font-weight:600;color:#059669;margin-bottom:0.2em;">✅ 直覺、好解釋、可畫成圖</p>
+      <p style="font-weight:600;color:#dc2626;margin-top:0.4em;margin-bottom:0.2em;">❌ 容易過擬合 — 只會背題目不會活用</p>
+      <div style="margin-top:0.5em;padding:0.3em 0.5em;background:rgba(124,58,237,0.06);border-radius:8px;">
+        <p class="small text-light">💡 請 AI 畫出決策樹圖，看第一個問題是什麼</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 23: Random Forest
+     ==================================== -->
+<section class="slide slide-split" id="slide-23">
+  <div class="panel photo-panel light-overlay" style="align-items:center;background-image:url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=900&h=600&fit=crop&q=80');">
+    <div class="card reveal" style="text-align:left;max-width:min(90%,380px);">
+      <p style="font-weight:600;color:#059669;margin-bottom:0.3em;">✅ 優點</p>
+      <p class="small text-light">穩定、不容易過擬合<br>可算出特徵重要性排序</p>
+      <p style="font-weight:600;color:#dc2626;margin-top:0.6em;margin-bottom:0.3em;">❌ 缺點</p>
+      <p class="small text-light">不像單棵樹那麼好解釋<br>100 棵樹同時在想什麼？</p>
+      <div style="margin-top:0.8em;padding:0.4em;background:rgba(124,58,237,0.06);border-radius:8px;">
+        <p class="small text-light">💡 畫出特徵重要性排序圖</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-peach">
+    <div class="tag reveal">Model 2</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">Random Forest</span><br>隨機森林</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      不要只種一棵樹，種一整片森林 🌲🌲🌲
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">問 1 個朋友晚餐吃什麼 → 踩雷<br>問 100 個朋友 → 多數決，通常不差</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 24: SVM
+     ==================================== -->
+<section class="slide slide-split" id="slide-24">
+  <div class="panel panel-peach">
+    <div class="tag reveal">Model 3</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">SVM</span><br>支持向量機</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      名字像變形金剛<br>但概念很簡單 🤖
+    </p>
+  </div>
+  <div class="panel panel-mint-soft grid-overlay" style="align-items:center;">
+    <!-- SVG SVM hyperplane diagram -->
+    <div class="diagram-box reveal reveal-delay-1" style="margin-bottom:var(--element-gap);max-width:min(85%,350px);">
+      <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Margin area -->
+        <rect x="120" y="5" width="60" height="190" fill="rgba(124,58,237,0.06)" rx="4"/>
+        <!-- Hyperplane -->
+        <line x1="150" y1="5" x2="150" y2="195" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="6,3"/>
+        <!-- Margin lines -->
+        <line x1="120" y1="5" x2="120" y2="195" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="180" y1="5" x2="180" y2="195" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+        <!-- Red dots (class 1) -->
+        <circle cx="50" cy="40" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="75" cy="80" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="35" cy="120" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="65" cy="155" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="95" cy="60" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="45" cy="175" r="8" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+        <!-- Support vectors (red) -->
+        <circle cx="120" cy="100" r="9" fill="#fca5a5" stroke="#dc2626" stroke-width="3"/>
+        <circle cx="118" cy="55" r="9" fill="#fca5a5" stroke="#dc2626" stroke-width="3"/>
+        <!-- Blue dots (class 2) -->
+        <circle cx="230" cy="35" r="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="250" cy="90" r="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="220" cy="140" r="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="260" cy="165" r="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="240" cy="55" r="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+        <!-- Support vectors (blue) -->
+        <circle cx="182" cy="80" r="9" fill="#93c5fd" stroke="#2563eb" stroke-width="3"/>
+        <circle cx="180" cy="145" r="9" fill="#93c5fd" stroke="#2563eb" stroke-width="3"/>
+        <!-- Labels -->
+        <text x="50" y="16" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600" font-family="Outfit">有理賠</text>
+        <text x="250" y="16" text-anchor="middle" fill="#2563eb" font-size="10" font-weight="600" font-family="Outfit">沒理賠</text>
+        <!-- Margin arrow -->
+        <text x="150" y="196" text-anchor="middle" fill="#7c3aed" font-size="9" font-weight="600" font-family="Outfit">← 最大間距 →</text>
+      </svg>
+    </div>
+    <div class="card reveal reveal-delay-2" style="text-align:left;max-width:min(85%,350px);padding:clamp(0.5rem,1.5vw,1rem);">
+      <p style="font-weight:600;color:#059669;margin-bottom:0.2em;font-size:var(--small-size);">✅ 高維度表現好</p>
+      <p style="font-weight:600;color:#dc2626;margin-bottom:0.2em;font-size:var(--small-size);">❌ 資料量大時慢</p>
+      <p class="small text-light" style="margin-top:0.3em;">⚠️ 要先做 StandardScaler 標準化</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 25: XGBoost
+     ==================================== -->
+<section class="slide slide-split" id="slide-25">
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <!-- SVG Boosting diagram -->
+    <div class="diagram-box reveal" style="margin-bottom:var(--element-gap);max-width:min(90%,420px);">
+      <svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+        <!-- Tree 1 -->
+        <rect x="20" y="25" width="80" height="35" rx="8" fill="#e0d4f5" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="60" y="47" text-anchor="middle" fill="#7c3aed" font-size="10" font-weight="600" font-family="Outfit">Tree 1</text>
+        <text x="60" y="80" text-anchor="middle" fill="#dc2626" font-size="9" font-family="Outfit">❌ 猜錯 3 個</text>
+        <!-- Arrow -->
+        <line x1="105" y1="42" x2="135" y2="42" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="120" y="35" text-anchor="middle" fill="#666" font-size="8" font-family="Outfit">修正</text>
+        <!-- Tree 2 -->
+        <rect x="140" y="25" width="80" height="35" rx="8" fill="#d4e8f5" stroke="#60a5fa" stroke-width="1.5"/>
+        <text x="180" y="47" text-anchor="middle" fill="#2563eb" font-size="10" font-weight="600" font-family="Outfit">Tree 2</text>
+        <text x="180" y="80" text-anchor="middle" fill="#dc2626" font-size="9" font-family="Outfit">❌ 猜錯 1 個</text>
+        <!-- Arrow -->
+        <line x1="225" y1="42" x2="255" y2="42" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="240" y="35" text-anchor="middle" fill="#666" font-size="8" font-family="Outfit">修正</text>
+        <!-- Tree 3 -->
+        <rect x="260" y="25" width="80" height="35" rx="8" fill="#d1fae5" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="300" y="47" text-anchor="middle" fill="#059669" font-size="10" font-weight="600" font-family="Outfit">Tree 3</text>
+        <text x="300" y="80" text-anchor="middle" fill="#059669" font-size="9" font-family="Outfit">✅ 全對！</text>
+        <!-- Progress bar -->
+        <rect x="40" y="105" width="280" height="14" rx="7" fill="#f3f4f6"/>
+        <rect x="40" y="105" width="90" height="14" rx="7" fill="#fca5a5"/>
+        <rect x="40" y="105" width="200" height="14" rx="7" fill="#fcd34d"/>
+        <rect x="40" y="105" width="280" height="14" rx="7" fill="#4ade80"/>
+        <text x="180" y="115" text-anchor="middle" fill="white" font-size="8" font-weight="700" font-family="Outfit">準確度逐步提升</text>
+        <!-- Labels -->
+        <text x="60" y="140" text-anchor="middle" fill="#999" font-size="8" font-family="Outfit">60%</text>
+        <text x="180" y="140" text-anchor="middle" fill="#999" font-size="8" font-family="Outfit">85%</text>
+        <text x="300" y="140" text-anchor="middle" fill="#059669" font-size="9" font-weight="700" font-family="Outfit">95%</text>
+        <!-- Arrow marker -->
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <div class="card reveal reveal-delay-1" style="text-align:left;max-width:min(90%,380px);padding:clamp(0.5rem,1.5vw,1rem);">
+      <p style="font-weight:600;color:#059669;margin-bottom:0.2em;font-size:var(--small-size);">✅ 通常準確度最高、速度快</p>
+      <p style="font-weight:600;color:#dc2626;margin-bottom:0.2em;font-size:var(--small-size);">❌ 參數較多需要調整</p>
+      <p class="small text-light" style="margin-top:0.3em;">🏆 Kaggle 表格資料冠軍首選</p>
+    </div>
+  </div>
+  <div class="panel panel-peach">
+    <div class="tag reveal">Model 4</div>
+    <h2 class="reveal reveal-delay-1"><span class="highlight">XGBoost</span><br>極端梯度提升</h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      分類模型界的捲王
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">如果 Logistic Regression 是白飯 🍚<br>XGBoost 是米其林三星炒飯 🍳</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 26: 模型比較
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-26">
+  <div class="tag tag-purple reveal">模型比較</div>
+  <h2 class="reveal reveal-delay-1">五大模型總覽</h2>
+  <div style="margin-top:var(--content-gap);overflow-x:auto;max-width:min(95vw,800px);" class="reveal reveal-delay-2">
+    <table class="slide-table">
+      <thead>
+        <tr><th>模型</th><th>可解釋性</th><th>準確度潛力</th><th>訓練速度</th><th>過擬合風險</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Logistic Regression</td><td>高</td><td>中</td><td>快</td><td>低</td></tr>
+        <tr><td>Decision Tree</td><td>高</td><td>中</td><td>快</td><td>高</td></tr>
+        <tr><td>Random Forest</td><td>中</td><td>高</td><td>中</td><td>低</td></tr>
+        <tr><td>SVM</td><td>低</td><td>中高</td><td>慢</td><td>中</td></tr>
+        <tr><td>XGBoost</td><td>中</td><td>高</td><td>中</td><td>低</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 27: 可解釋性
+     ==================================== -->
+<section class="slide slide-center" style="background:linear-gradient(135deg, var(--lavender) 0%, var(--peach) 100%);" id="slide-27">
+  <h2 class="reveal">準確度最高 ≠ <span class="highlight">最好</span></h2>
+  <div class="quote-box reveal reveal-delay-1" style="margin-top:var(--content-gap);">
+    <p>金管會：「你為什麼對這個客戶加收保費？」<br>
+    你：「因為 100 棵樹投票的結果」<br>
+    金管會：「？？？」</p>
+  </div>
+  <div class="card reveal reveal-delay-2" style="margin-top:var(--content-gap);text-align:center;">
+    <p style="font-weight:700;color:var(--purple);font-size:var(--body-size);">可解釋性在保險業非常重要</p>
+    <p class="small text-light" style="margin-top:0.3em;">主管聽得懂、監理機關接受，比 accuracy 多 2% 重要太多</p>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 28: 第 3 節 — 分隔頁
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--dark);" id="slide-28">
+  <span class="section-num" style="color:rgba(255,255,255,0.05);font-size:clamp(5rem,15vw,12rem);">03</span>
+  <div class="tag reveal" style="background:var(--purple);color:white;">第 3 節</div>
+  <h1 class="reveal reveal-delay-1" style="color:white;margin-top:var(--element-gap);">
+    <span style="color:var(--purple-light);">動手</span>挑戰
+  </h1>
+  <p class="reveal reveal-delay-2" style="color:rgba(255,255,255,0.4);margin-top:var(--element-gap);">自選模型實作 + 精算洞察報告</p>
+</section>
+
+<!-- ====================================
+     SLIDE 29: 自選模型實作
+     ==================================== -->
+<section class="slide slide-split" id="slide-29">
+  <div class="panel panel-peach">
+    <div class="tag reveal">你的回合</div>
+    <h2 class="reveal reveal-delay-1">自選模型<br><span class="highlight">Vibe Coding 實作</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      複製貼上 — 你們最擅長的技能 😏
+    </p>
+  </div>
+  <div class="panel panel-lavender grid-overlay" style="align-items:center;">
+    <div class="card reveal reveal-delay-2" style="text-align:left;max-width:min(90%,400px);">
+      <h3 style="color:var(--purple);margin-bottom:var(--element-gap);">任務</h3>
+      <ul class="bullet-list">
+        <li>從四個模型自選至少一個</li>
+        <li>與 Logistic Regression 比較</li>
+        <li>使用 random_state=42</li>
+        <li>任務清單上有 Prompt 參考</li>
+      </ul>
+      <div style="margin-top:var(--element-gap);padding:0.4em;background:rgba(124,58,237,0.06);border-radius:8px;">
+        <p class="small text-light">⏱ 25 分鐘，有問題隨時舉手</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 30: 精算洞察報告
+     ==================================== -->
+<section class="slide slide-split" id="slide-30">
+  <div class="panel panel-lavender">
+    <div class="tag tag-purple reveal">最重要的一步</div>
+    <h2 class="reveal reveal-delay-1">精算<span class="highlight">洞察報告</span></h2>
+    <p class="reveal reveal-delay-2" style="margin-top:var(--element-gap);font-size:var(--body-size);color:var(--text-light);">
+      你是產險公司的資料科學家<br>明天要跟總經理報告
+    </p>
+    <div class="meme-box reveal reveal-delay-3" style="margin-top:var(--content-gap);">
+      <p class="small">打開 Jupyter Notebook 說「你看我的 confusion matrix」<br>→ 總經理覺得你在念咒語 🧙‍♂️</p>
+    </div>
+  </div>
+  <div class="panel panel-peach" style="align-items:center;">
+    <div class="card reveal reveal-delay-2" style="text-align:left;max-width:min(90%,380px);">
+      <h3 style="color:var(--purple);margin-bottom:var(--element-gap);">報告要包含</h3>
+      <ul class="bullet-list" style="font-size:var(--small-size);">
+        <li>用了什麼模型、為什麼選它</li>
+        <li>最重要的 2-3 個風險因子</li>
+        <li>高風險客群的具體特徵</li>
+        <li>保費調整建議</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 31: 公平待客
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--white);" id="slide-31">
+  <div class="tag tag-peach reveal">⚖️ 倫理議題</div>
+  <h2 class="reveal reveal-delay-1">技術上做得到<br>≠ <span class="highlight">倫理上應該做</span></h2>
+  <p class="text-light reveal reveal-delay-2" style="margin-top:var(--element-gap);max-width:min(90%,500px);margin-left:auto;margin-right:auto;">
+    性別、種族有預測力，但能直接用來定價嗎？
+  </p>
+  <div class="card-grid reveal reveal-delay-3" style="margin-top:var(--content-gap);max-width:min(90vw,700px);">
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:600;font-size:var(--body-size);">做法一</p>
+      <p class="small text-light">直接拿掉，不放進模型</p>
+    </div>
+    <div class="card" style="text-align:left;">
+      <p style="font-weight:600;font-size:var(--body-size);">做法二</p>
+      <p class="small text-light">放進去但只做內部分析<br>不用來定價</p>
+    </div>
+  </div>
+  <p class="small text-light reveal reveal-delay-4" style="margin-top:var(--content-gap);">AI 用在招聘、貸款、刑事判決都面臨同樣問題</p>
+</section>
+
+<!-- ====================================
+     SLIDE 32: 總結
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--lavender);" id="slide-32">
+  <div class="tag reveal">總結</div>
+  <h2 class="reveal reveal-delay-1">今天我們做了三件事</h2>
+  <div class="card-grid reveal reveal-delay-2" style="margin-top:var(--content-gap);max-width:min(95vw,850px);">
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">🔍</p>
+      <p style="font-weight:700;color:var(--purple);">EDA</p>
+      <p class="small text-light">認識你的資料<br>描述統計、視覺化</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">🤖</p>
+      <p style="font-weight:700;color:var(--purple);">建模</p>
+      <p class="small text-light">Benchmark + 四大模型<br>混淆矩陣、Recall</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size:clamp(1.2rem,2vw,1.5rem);">💼</p>
+      <p style="font-weight:700;color:var(--purple);">商業判斷</p>
+      <p class="small text-light">翻譯成商業語言<br>公平性 + 監理</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================
+     SLIDE 33: 金句結尾
+     ==================================== -->
+<section class="slide slide-center" style="background:var(--dark);" id="slide-33">
+  <h2 class="reveal" style="color:white;max-width:min(90%,700px);">
+    統計素養和商業直覺<br>才是你們真正的<span style="color:var(--mint-dark);">競爭力</span>
+  </h2>
+  <div style="width:clamp(60px,10vw,120px);height:3px;background:linear-gradient(90deg,var(--purple),var(--mint-dark));margin:var(--content-gap) auto;border-radius:2px;" class="reveal reveal-delay-1"></div>
+  <p class="reveal reveal-delay-2" style="color:rgba(255,255,255,0.5);font-size:var(--body-size);">
+    AI 取代不了會思考的人<br>只會取代不願意思考的人
+  </p>
+</section>
+
+<!-- ====================================
+     SLIDE 34: Thank You
+     ==================================== -->
+<section class="slide slide-center" style="background:linear-gradient(135deg, var(--peach) 0%, var(--lavender) 100%);" id="slide-34">
+  <h1 class="reveal"><span class="highlight">謝謝大家</span></h1>
+  <p class="text-light reveal reveal-delay-1" style="margin-top:var(--element-gap);font-size:var(--body-size);">
+    有問題歡迎下課後來聊
+  </p>
+  <div class="card reveal reveal-delay-2" style="margin-top:var(--content-gap);text-align:center;">
+    <p style="font-weight:600;">侯冠宇</p>
+    <p class="small text-light">喬泰科技 AI 系統架構師 ｜ 高科大博士生</p>
+    <p class="small text-light" style="margin-top:0.3em;">歡迎加 LINE 交流 💬</p>
+  </div>
+</section>
+
+<!-- ==================
+     JAVASCRIPT
+     ================== -->
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  const progressBar = document.getElementById('progressBar');
+  const slideCounter = document.getElementById('slideCounter');
+  let currentSlide = 0;
+  let isScrolling = false;
+
+  /* Update UI */
+  function updateUI() {
+    const progress = ((currentSlide + 1) / totalSlides) * 100;
+    progressBar.style.width = progress + '%';
+    slideCounter.textContent = (currentSlide + 1) + ' / ' + totalSlides;
+  }
+
+  /* Navigate to slide */
+  function goToSlide(index) {
+    if (index < 0 || index >= totalSlides || isScrolling) return;
+    isScrolling = true;
+    currentSlide = index;
+    slides[index].scrollIntoView({ behavior: 'smooth' });
+    updateUI();
+    setTimeout(function() { isScrolling = false; }, 600);
+  }
+
+  /* Keyboard navigation */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      goToSlide(currentSlide + 1);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      goToSlide(currentSlide - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goToSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goToSlide(totalSlides - 1);
+    }
+  });
+
+  /* Mouse wheel navigation */
+  let wheelTimeout;
+  document.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(function() {
+      if (e.deltaY > 0) goToSlide(currentSlide + 1);
+      else if (e.deltaY < 0) goToSlide(currentSlide - 1);
+    }, 50);
+  }, { passive: false });
+
+  /* Touch navigation */
+  let touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    const deltaY = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(deltaY) > 50) {
+      if (deltaY > 0) goToSlide(currentSlide + 1);
+      else goToSlide(currentSlide - 1);
+    }
+  }, { passive: true });
+
+  /* Intersection Observer for scroll tracking */
+  const scrollObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        const index = Array.from(slides).indexOf(entry.target);
+        if (index !== -1) {
+          currentSlide = index;
+          updateUI();
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
+  slides.forEach(function(slide) { scrollObserver.observe(slide); });
+
+  /* Intersection Observer for reveal animations */
+  const revealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(function(el) {
+    revealObserver.observe(el);
+  });
+
+  /* Initial state */
+  updateUI();
+})();
+</script>
+
+</body>
+</html>
