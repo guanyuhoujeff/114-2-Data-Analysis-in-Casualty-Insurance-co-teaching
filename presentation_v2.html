@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>產險資料分析 — 車險理賠預測實戰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+.slide {
+  width: 100vw; height: 100vh; height: 100dvh;
+  overflow: hidden; scroll-snap-align: start;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+:root {
+  --title-size: clamp(2.4rem, 5.5vw, 4rem);
+  --h2-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  --h3-size: clamp(1.15rem, 2.4vw, 1.7rem);
+  --body-size: clamp(0.88rem, 1.6vw, 1.2rem);
+  --small-size: clamp(0.7rem, 1.15vw, 0.95rem);
+  --code-size: clamp(0.72rem, 1.25vw, 1rem);
+  --slide-padding: clamp(2rem, 6vw, 6rem);
+  --content-gap: clamp(0.8rem, 2.5vw, 2rem);
+  --element-gap: clamp(0.5rem, 1.2vw, 1rem);
+
+  --cream: #FFFDF7;
+  --black: #1A1A1A;
+  --accent: #D4480B;
+  --accent-light: #FFF0E8;
+  --gray: #6B6B6B;
+  --gray-light: #E0E0E0;
+  --gray-bg: #F5F4F0;
+  --white: #FFFFFF;
+  --green: #1B7A3D;
+  --green-bg: #E8F5EC;
+  --red-bg: #FFF0E8;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans TC', -apple-system, sans-serif;
+  color: var(--black);
+  background: var(--cream);
+  line-height: 1.7;
+}
+
+.slide-center {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: var(--slide-padding); text-align: center;
+}
+.slide-content {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: var(--slide-padding);
+  gap: var(--content-gap);
+  flex: 1;
+}
+.slide-split {
+  display: flex; flex-direction: row; flex: 1;
+}
+.slide-split .panel {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; padding: var(--slide-padding);
+  position: relative;
+}
+
+h1 {
+  font-size: var(--title-size); font-weight: 800;
+  line-height: 1.1; letter-spacing: -0.03em;
+  color: var(--black);
+}
+h2 {
+  font-size: var(--h2-size); font-weight: 700;
+  line-height: 1.2; letter-spacing: -0.02em;
+}
+h3 {
+  font-size: var(--h3-size); font-weight: 600; line-height: 1.3;
+}
+p, li {
+  font-size: var(--body-size); line-height: 1.7;
+  color: var(--gray);
+}
+strong { font-weight: 700; color: var(--black); }
+em { font-style: normal; color: var(--accent); font-weight: 600; }
+
+.label {
+  font-size: var(--small-size);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.8em;
+  font-family: 'Inter', sans-serif;
+}
+
+.big-number {
+  font-size: clamp(3.5rem, 12vw, 9rem);
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.subtitle {
+  font-size: var(--h3-size); font-weight: 400;
+  color: var(--gray); margin-top: 0.5em;
+}
+
+.card {
+  border: 2px solid var(--black);
+  border-radius: 4px;
+  padding: clamp(1rem, 2vw, 1.8rem);
+  background: var(--white);
+}
+.card-row {
+  display: flex; gap: var(--element-gap); flex-wrap: wrap;
+}
+.card-row .card { flex: 1; min-width: 180px; }
+
+.card-accent {
+  background: var(--white);
+  border: none;
+  border-left: 3px solid var(--accent);
+  border-radius: 0;
+  padding: clamp(0.8rem, 1.5vw, 1.4rem);
+}
+.card-dark {
+  background: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  padding: clamp(1rem, 2vw, 1.8rem);
+}
+.card-dark p, .card-dark li { color: rgba(255,255,255,0.8); }
+.card-green {
+  background: var(--green-bg);
+  border-left: 3px solid var(--green);
+  border-radius: 0;
+  padding: clamp(0.8rem, 1.5vw, 1.4rem);
+}
+
+.code-block {
+  background: var(--black); color: #E0E0E0;
+  border-radius: 4px;
+  padding: clamp(0.6rem, 1.5vw, 1.2rem);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: var(--code-size); line-height: 1.6;
+  overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+}
+
+.quote-block {
+  border-left: 3px solid var(--accent);
+  padding: 1em 1.5em;
+  background: var(--accent-light);
+  border-radius: 0;
+  font-size: var(--body-size);
+  color: var(--black);
+  font-weight: 500;
+}
+
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--small-size);
+}
+th {
+  background: var(--black); color: white;
+  padding: 0.6em 1em; text-align: left;
+  font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase; font-size: calc(var(--small-size) * 0.9);
+}
+td {
+  padding: 0.6em 1em; background: var(--white);
+  border-bottom: 1px solid var(--gray-light);
+}
+tr:last-child td { border-bottom: 2px solid var(--black); }
+
+.compare-row { display: flex; gap: var(--element-gap); align-items: stretch; }
+.compare-col { flex: 1; min-width: 0; }
+
+ul, ol { padding-left: 1.5em; }
+li { margin-bottom: 0.4em; }
+li::marker { color: var(--accent); }
+
+.section-divider {
+  background: var(--black);
+  color: var(--white);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+.section-divider h1 { color: var(--white); }
+.section-divider .label { color: var(--accent); }
+
+.tag {
+  display: inline-block;
+  background: var(--black); color: var(--white);
+  padding: 0.15em 0.6em; border-radius: 2px;
+  font-size: var(--small-size); font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.tag-accent {
+  background: var(--accent); color: var(--white);
+}
+
+.page-num {
+  position: absolute; bottom: 1.2rem; right: 1.8rem;
+  font-size: var(--small-size); color: var(--gray-light);
+  font-weight: 400; font-family: 'Inter', sans-serif;
+}
+
+.divider {
+  width: 100%; height: 1px;
+  background: var(--gray-light);
+  margin: 0.5em 0;
+}
+.divider-thick {
+  height: 2px; background: var(--black);
+}
+
+.svg-container {
+  display: flex; justify-content: center; align-items: center;
+  padding: 1rem 0;
+}
+.svg-container svg { max-width: 100%; height: auto; }
+
+.flow-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; flex-wrap: wrap;
+}
+.flow-item {
+  border: 2px solid var(--black); border-radius: 4px;
+  padding: 0.5em 1.2em;
+  font-size: var(--small-size); font-weight: 600;
+  text-align: center; background: var(--white);
+}
+.flow-item-active {
+  background: var(--accent); color: var(--white);
+  border-color: var(--accent);
+}
+.flow-arrow {
+  color: var(--black); font-size: 1.2em; font-weight: 400;
+}
+
+.principle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--element-gap);
+}
+.principle-item {
+  border: 2px solid var(--black);
+  border-radius: 4px; padding: 1em;
+  background: var(--white);
+  text-align: left;
+}
+.principle-num {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800; color: var(--accent);
+  line-height: 1;
+}
+
+.cover-line {
+  width: 60px; height: 3px;
+  background: var(--accent);
+  margin: 1em auto;
+}
+
+.nav-hint {
+  position: fixed; bottom: 1.5rem; left: 50%;
+  transform: translateX(-50%);
+  background: var(--black); color: var(--white);
+  padding: 0.4em 1.2em; border-radius: 2px;
+  font-size: var(--small-size);
+  opacity: 0.7; transition: opacity 1s;
+  z-index: 100;
+  font-weight: 500; letter-spacing: 0.05em;
+}
+
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--element-gap);
+}
+
+.section-divider .page-num { color: rgba(255,255,255,0.3); }
+
+.steps-list { list-style: none; padding-left: 0; counter-reset: step; }
+.steps-list li { counter-increment: step; display: flex; align-items: flex-start; gap: 0.8em; margin-bottom: 0.8em; }
+.steps-list li::before {
+  content: counter(step);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.6em; height: 1.6em;
+  background: var(--accent); color: var(--white);
+  border-radius: 2px; font-weight: 700;
+  font-size: var(--small-size);
+}
+
+.metric-card {
+  border: 2px solid var(--black); border-radius: 4px;
+  padding: 0.8em; text-align: center; background: var(--white);
+}
+.metric-card h3 { font-size: var(--body-size); margin-bottom: 0.2em; }
+.metric-card p { font-size: var(--small-size); }
+
+.big-number-inline {
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 800; color: var(--accent);
+  line-height: 1; letter-spacing: -0.04em;
+}
+
+.slide-content h2 + .divider { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1 — COVER -->
+<!-- ============================================================ -->
+<div class="slide slide-center" style="background: var(--cream);">
+  <div class="label" style="margin-bottom: 1.5em; font-size: var(--small-size);">NKUST &times; 喬泰科技 &mdash; 協作教學</div>
+  <h1 style="font-size: clamp(3rem, 8vw, 6rem); letter-spacing: -0.04em;">產險資料分析</h1>
+  <div class="cover-line"></div>
+  <p class="subtitle" style="font-size: var(--h3-size); max-width: 600px;">從 0 到 1 的車險理賠預測實戰</p>
+  <div style="margin-top: 2.5em;">
+    <div class="divider" style="width: 100%; max-width: 400px; margin: 0 auto 1em;"></div>
+    <p style="font-size: var(--small-size); color: var(--gray);">侯冠宇 &nbsp;/&nbsp; 2025.04.09 &nbsp;/&nbsp; 郭訓志教授課程</p>
+  </div>
+  <span class="page-num">1 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2 — SELF-INTRO -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1.2;">
+      <div class="label">About</div>
+      <h1 style="margin-bottom: 0.3em;">侯冠宇</h1>
+      <p style="font-size: var(--h3-size); color: var(--gray); margin-bottom: 1em;">金融 &times; AI 跨界</p>
+      <div class="divider-thick divider" style="width: 60px; margin-bottom: 1em;"></div>
+      <p>將 AI 技術落地到金融場景，<br>讓資料成為商業決策的依據。</p>
+    </div>
+    <div class="panel" style="gap: var(--element-gap); background: var(--gray-bg);">
+      <div class="card">
+        <div class="tag-accent tag" style="margin-bottom: 0.5em;">Current</div>
+        <h3>AI 系統架構師</h3>
+        <p>喬泰科技</p>
+      </div>
+      <div class="card">
+        <div class="tag" style="margin-bottom: 0.5em;">Academic</div>
+        <h3>博士研究生</h3>
+        <p>國立高雄科技大學</p>
+      </div>
+      <div class="card">
+        <div class="tag" style="margin-bottom: 0.5em;">Focus</div>
+        <h3>金融科技 &times; 人工智慧</h3>
+        <p>機器學習、風險建模、自然語言處理</p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">2 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3 — 資料科學 = Netflix 推薦 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Insight</div>
+    <h2>資料科學，其實你每天都在用</h2>
+    <p style="max-width: 650px;">昨天不小心看了一部韓劇，今天 Netflix 首頁全變韓劇。蝦皮搜了手機殼，底下跳出螢幕貼、充電線、氣囊支架 &mdash; 它比你媽還了解你。</p>
+    <div class="svg-container" style="padding: 1.5rem 0;">
+      <svg width="680" height="100" viewBox="0 0 680 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="20" width="180" height="60" rx="4" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF"/>
+        <text x="90" y="56" text-anchor="middle" font-family="Inter, Noto Sans TC, sans-serif" font-size="14" font-weight="600" fill="#1A1A1A">蒐集資料</text>
+        <path d="M190 50 L230 50" stroke="#1A1A1A" stroke-width="2"/>
+        <polygon points="228,44 240,50 228,56" fill="#1A1A1A"/>
+        <rect x="250" y="20" width="180" height="60" rx="4" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF"/>
+        <text x="340" y="56" text-anchor="middle" font-family="Inter, Noto Sans TC, sans-serif" font-size="14" font-weight="600" fill="#1A1A1A">分析規律</text>
+        <path d="M440 50 L480 50" stroke="#1A1A1A" stroke-width="2"/>
+        <polygon points="478,44 490,50 478,56" fill="#1A1A1A"/>
+        <rect x="500" y="20" width="180" height="60" rx="4" fill="#D4480B" stroke="#D4480B" stroke-width="2"/>
+        <text x="590" y="56" text-anchor="middle" font-family="Inter, Noto Sans TC, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF">做出決策</text>
+      </svg>
+    </div>
+    <div class="card-accent">
+      <p><strong>保險版本：</strong>Netflix 猜錯頂多看一部爛片；保險公司猜錯，可能賠到脫褲</p>
+    </div>
+  </div>
+  <span class="page-num">3 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4 — 資料探勘：淘金 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Concept</div>
+      <h2>資料探勘 = 淘金</h2>
+      <p style="margin-top: 0.8em;">Data Mining &mdash; 手上一大堆砂石，你要從裡面淘出金子</p>
+      <div class="divider" style="margin: 1em 0;"></div>
+      <div class="card-accent" style="margin-bottom: 0.8em;">
+        <p><strong>蝦皮的金子：</strong>買手機殼的人 60% 也買螢幕貼 &rarr; 一起推薦</p>
+      </div>
+      <div class="card-accent" style="margin-bottom: 0.8em;">
+        <p><strong>保險的金子：</strong>「年輕 + 超速 + 跑車 = 高風險」&rarr; 加費！</p>
+      </div>
+      <div class="card-green">
+        <p><strong>今天的任務：</strong>從一萬筆車險客戶資料裡面淘金</p>
+      </div>
+    </div>
+    <div class="panel" style="flex: 0.8; background: var(--gray-bg); align-items: center;">
+      <div class="big-number">10,000</div>
+      <p style="margin-top: 0.5em; font-weight: 600; color: var(--black);">筆客戶資料</p>
+      <p style="color: var(--gray);">今天的淘金場</p>
+    </div>
+  </div>
+  <span class="page-num">4 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5 — 今天的目標 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content" style="align-items: center; text-align: center;">
+    <div class="label">Agenda</div>
+    <h2>今天的三堂課</h2>
+    <div class="flow-row" style="margin-top: 1.5em;">
+      <div class="flow-item flow-item-active">
+        <div style="font-size: var(--small-size); color: rgba(255,255,255,0.7);">第 1 節</div>
+        <div>看懂資料</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-item">
+        <div style="font-size: var(--small-size); color: var(--gray);">第 2 節</div>
+        <div>建立模型</div>
+      </div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-item">
+        <div style="font-size: var(--small-size); color: var(--gray);">第 3 節</div>
+        <div>動手挑戰</div>
+      </div>
+    </div>
+    <div class="divider" style="width: 100%; max-width: 500px; margin: 1.5em auto;"></div>
+    <div class="card-accent" style="max-width: 550px; text-align: left;">
+      <p><em>全程不寫程式碼</em> &mdash; 你不需要會寫程式，但你需要懂概念。AI 負責執行，你負責判斷</p>
+    </div>
+  </div>
+  <span class="page-num">5 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6 — Vibe Coding -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Tool</div>
+    <h2>Vibe Coding &mdash; 用中文寫程式</h2>
+    <p style="max-width: 650px; margin-bottom: 1em;">傳統做分析：自己寫 Python，光裝環境就可能搞到重灌電腦。<br>現在有了 AI，你只要用「說的」就好。</p>
+    <div class="card-row">
+      <div class="card">
+        <div class="tag-accent tag" style="margin-bottom: 0.5em;">免費</div>
+        <h3>零成本</h3>
+        <p>Google 帳號登入即可</p>
+      </div>
+      <div class="card">
+        <div class="tag-accent tag" style="margin-bottom: 0.5em;">免安裝</div>
+        <h3>瀏覽器開啟</h3>
+        <p>不用裝 Python、不用 Anaconda</p>
+      </div>
+      <div class="card">
+        <div class="tag-accent tag" style="margin-bottom: 0.5em;">中文</div>
+        <h3>對話式操作</h3>
+        <p>用自然語言下指令，AI 幫你寫 Python</p>
+      </div>
+    </div>
+    <div class="quote-block" style="margin-top: 1em;">
+      你只要會打中文，就能做資料分析 &mdash; Google Antigravity
+    </div>
+  </div>
+  <span class="page-num">6 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7 — AI 驗證三原則 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label" style="color: var(--accent);">Warning</div>
+    <h2>AI 驗證三原則</h2>
+    <p style="margin-bottom: 1em;">AI 就像班上考很爛但講話超有自信的同學 &mdash; 聽起來頭頭是道，結果可能是錯的</p>
+    <div class="card-row">
+      <div class="card" style="border-color: var(--accent);">
+        <span class="tag-accent tag" style="margin-bottom: 0.6em;">01</span>
+        <h3>AI 會犯錯</h3>
+        <p>程式碼可能有 bug，統計解讀可能講得很專業但數字是亂掰的</p>
+      </div>
+      <div class="card" style="border-color: var(--accent);">
+        <span class="tag-accent tag" style="margin-bottom: 0.6em;">02</span>
+        <h3>怎麼驗證</h3>
+        <p>挑一個數字用計算機算、檢查軸標籤、回想統計原理</p>
+      </div>
+      <div class="card" style="border-color: var(--accent);">
+        <span class="tag-accent tag" style="margin-bottom: 0.6em;">03</span>
+        <h3>學術誠信</h3>
+        <p>你可以用 AI 加速，但你要能解釋每一個結果。<strong>不懂就不算你的分析</strong></p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">7 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8 — Section Divider: EDA -->
+<!-- ============================================================ -->
+<div class="slide section-divider">
+  <div class="label">Part 01</div>
+  <h1 style="margin-bottom: 0.3em;">EDA</h1>
+  <p class="subtitle" style="color: rgba(255,255,255,0.6);">在建模前先認識你的資料</p>
+  <p style="color: rgba(255,255,255,0.4); margin-top: 1em; font-size: var(--small-size); letter-spacing: 0.1em;">Exploratory Data Analysis</p>
+  <span class="page-num">8 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9 — EDA 三大陷阱 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Pitfalls</div>
+    <h2>EDA 三大陷阱</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--element-gap); margin-top: 0.5em;">
+      <div class="card-accent">
+        <h3>1. 只看平均數不看分佈</h3>
+        <p>90% 的人理賠不到 1 萬，1% 的人理賠超過 500 萬，「平均 10 萬」是被拉上去的。<br><strong>你跟馬雲的平均資產幾百億，但你口袋只有兩百塊</strong></p>
+      </div>
+      <div class="card-accent">
+        <h3>2. 忽略缺失值</h3>
+        <p>真實資料常有客戶漏填 &mdash; 不處理就直接建模？模型可能不報錯但結果是錯的，<strong>你會帶著錯誤結論去跟老闆報告</strong></p>
+      </div>
+      <div class="card-accent">
+        <h3>3. 相關 &ne; 因果</h3>
+        <p>冰淇淋銷量 &uarr; 溺水人數 &uarr; &mdash; 不是冰淇淋害人溺水，是夏天。<strong>看到兩個變數有關聯，不代表一個造成另一個</strong></p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">9 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10 — 資料集概覽 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1.4;">
+      <div class="label">Data</div>
+      <h2 style="margin-bottom: 0.5em;">Kaggle Car Insurance Claim</h2>
+      <table>
+        <thead>
+          <tr><th>類別</th><th>欄位</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>人口統計</strong></td><td>AGE, GENDER, EDUCATION, INCOME</td></tr>
+          <tr><td><strong>駕駛背景</strong></td><td>DRIVING_EXPERIENCE, PAST_ACCIDENTS, SPEEDING_PENALTIES, DUIS</td></tr>
+          <tr><td><strong>車輛屬性</strong></td><td>VEHICLE_OWNERSHIP, VEHICLE_YEAR, ANNUAL_MILEAGE</td></tr>
+          <tr><td><em>預測目標</em></td><td>OUTCOME（0: 未理賠，1: 有理賠）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel" style="flex: 0.6; background: var(--gray-bg); align-items: center;">
+      <div class="big-number">10K</div>
+      <p style="font-weight: 600; color: var(--black); margin-top: 0.3em;">筆客戶資料</p>
+      <div class="divider" style="width: 60px; margin: 0.8em auto;"></div>
+      <p style="font-size: var(--small-size);">19 個特徵欄位<br>1 個目標欄位</p>
+    </div>
+  </div>
+  <span class="page-num">10 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11 — Demo: 資料載入與清理 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Demo</div>
+    <h2>資料載入與清理</h2>
+    <ol class="steps-list" style="margin-top: 0.5em;">
+      <li>
+        <div>
+          <strong>載入</strong>
+          <div class="code-block" style="margin-top: 0.3em;">請讀取 Car_Insurance_Claim.csv，印出前 5 筆和 shape</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>發現缺失</strong>
+          <div class="code-block" style="margin-top: 0.3em;">檢查哪些欄位有缺失值，列出缺失數量和百分比</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>處理</strong>（中位數比平均數穩健，不怕極端值）
+          <div class="code-block" style="margin-top: 0.3em;">CREDIT_SCORE 用年齡層中位數填補，ANNUAL_MILEAGE 刪除缺失列</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>驗證</strong>
+          <div class="code-block" style="margin-top: 0.3em;">再跑一次缺失值檢查，確認都是 0</div>
+        </div>
+      </li>
+    </ol>
+  </div>
+  <span class="page-num">11 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12 — Demo: 視覺化探索四連發 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Demo</div>
+    <h2>視覺化探索四連發</h2>
+    <div class="grid-2x2" style="margin-top: 0.5em;">
+      <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 0.5em;">1. 描述統計表</h3>
+        <svg width="180" height="80" viewBox="0 0 180 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="180" height="18" fill="#1A1A1A"/>
+          <text x="10" y="13" font-size="9" fill="#fff" font-family="Inter">STAT</text>
+          <text x="60" y="13" font-size="9" fill="#fff" font-family="Inter">MEAN</text>
+          <text x="110" y="13" font-size="9" fill="#fff" font-family="Inter">STD</text>
+          <text x="150" y="13" font-size="9" fill="#fff" font-family="Inter">MAX</text>
+          <line x1="0" y1="36" x2="180" y2="36" stroke="#E0E0E0"/>
+          <text x="10" y="32" font-size="8" fill="#6B6B6B" font-family="Inter">AGE</text>
+          <text x="60" y="32" font-size="8" fill="#6B6B6B" font-family="Inter">38.2</text>
+          <text x="110" y="32" font-size="8" fill="#6B6B6B" font-family="Inter">12.1</text>
+          <text x="150" y="32" font-size="8" fill="#6B6B6B" font-family="Inter">73</text>
+          <line x1="0" y1="54" x2="180" y2="54" stroke="#E0E0E0"/>
+          <text x="10" y="50" font-size="8" fill="#6B6B6B" font-family="Inter">INCOME</text>
+          <text x="60" y="50" font-size="8" fill="#6B6B6B" font-family="Inter">45K</text>
+          <text x="110" y="50" font-size="8" fill="#6B6B6B" font-family="Inter">22K</text>
+          <text x="150" y="50" font-size="8" fill="#6B6B6B" font-family="Inter">120K</text>
+          <line x1="0" y1="72" x2="180" y2="72" stroke="#1A1A1A" stroke-width="2"/>
+          <text x="10" y="68" font-size="8" fill="#6B6B6B" font-family="Inter">MILES</text>
+          <text x="60" y="68" font-size="8" fill="#6B6B6B" font-family="Inter">12.5K</text>
+          <text x="110" y="68" font-size="8" fill="#6B6B6B" font-family="Inter">6K</text>
+          <text x="150" y="68" font-size="8" fill="#6B6B6B" font-family="Inter">30K</text>
+        </svg>
+      </div>
+      <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 0.5em;">2. 風險輪廓長條圖</h3>
+        <svg width="200" height="90" viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="5" y="10" font-size="7" fill="#6B6B6B" font-family="Inter">AGE vs 理賠率</text>
+          <rect x="20" y="20" width="30" height="60" fill="#D4480B" rx="2"/>
+          <rect x="60" y="35" width="30" height="45" fill="#D4480B" opacity="0.8" rx="2"/>
+          <rect x="100" y="50" width="30" height="30" fill="#D4480B" opacity="0.6" rx="2"/>
+          <rect x="140" y="55" width="30" height="25" fill="#D4480B" opacity="0.4" rx="2"/>
+          <line x1="15" y1="80" x2="180" y2="80" stroke="#1A1A1A" stroke-width="1"/>
+          <text x="25" y="89" font-size="7" fill="#6B6B6B" font-family="Inter">16-25</text>
+          <text x="65" y="89" font-size="7" fill="#6B6B6B" font-family="Inter">26-39</text>
+          <text x="105" y="89" font-size="7" fill="#6B6B6B" font-family="Inter">40-64</text>
+          <text x="148" y="89" font-size="7" fill="#6B6B6B" font-family="Inter">65+</text>
+        </svg>
+      </div>
+      <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 0.5em;">3. 箱形圖</h3>
+        <svg width="180" height="80" viewBox="0 0 180 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="5" y="10" font-size="7" fill="#6B6B6B" font-family="Inter">駕齡 vs 里程數</text>
+          <line x1="40" y1="25" x2="40" y2="65" stroke="#1A1A1A"/>
+          <rect x="25" y="35" width="30" height="20" stroke="#1A1A1A" stroke-width="2" fill="none"/>
+          <line x1="25" y1="45" x2="55" y2="45" stroke="#D4480B" stroke-width="2"/>
+          <line x1="30" y1="25" x2="50" y2="25" stroke="#1A1A1A"/>
+          <line x1="30" y1="65" x2="50" y2="65" stroke="#1A1A1A"/>
+          <line x1="120" y1="30" x2="120" y2="70" stroke="#1A1A1A"/>
+          <rect x="105" y="40" width="30" height="20" stroke="#1A1A1A" stroke-width="2" fill="none"/>
+          <line x1="105" y1="52" x2="135" y2="52" stroke="#D4480B" stroke-width="2"/>
+          <line x1="110" y1="30" x2="130" y2="30" stroke="#1A1A1A"/>
+          <line x1="110" y1="70" x2="130" y2="70" stroke="#1A1A1A"/>
+          <text x="30" y="78" font-size="7" fill="#6B6B6B" font-family="Inter">新手</text>
+          <text x="107" y="78" font-size="7" fill="#6B6B6B" font-family="Inter">老手</text>
+        </svg>
+      </div>
+      <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 0.5em;">4. 相關性熱力圖</h3>
+        <svg width="160" height="80" viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="0" width="25" height="25" fill="#D4480B"/>
+          <rect x="55" y="0" width="25" height="25" fill="#D4480B" opacity="0.3"/>
+          <rect x="80" y="0" width="25" height="25" fill="#D4480B" opacity="0.6"/>
+          <rect x="105" y="0" width="25" height="25" fill="#D4480B" opacity="0.2"/>
+          <rect x="30" y="25" width="25" height="25" fill="#D4480B" opacity="0.3"/>
+          <rect x="55" y="25" width="25" height="25" fill="#D4480B"/>
+          <rect x="80" y="25" width="25" height="25" fill="#D4480B" opacity="0.4"/>
+          <rect x="105" y="25" width="25" height="25" fill="#D4480B" opacity="0.5"/>
+          <rect x="30" y="50" width="25" height="25" fill="#D4480B" opacity="0.6"/>
+          <rect x="55" y="50" width="25" height="25" fill="#D4480B" opacity="0.4"/>
+          <rect x="80" y="50" width="25" height="25" fill="#D4480B"/>
+          <rect x="105" y="50" width="25" height="25" fill="#D4480B" opacity="0.7"/>
+          <text x="5" y="16" font-size="6" fill="#6B6B6B" font-family="Inter">AGE</text>
+          <text x="1" y="41" font-size="6" fill="#6B6B6B" font-family="Inter">SPEED</text>
+          <text x="1" y="66" font-size="6" fill="#6B6B6B" font-family="Inter">MILES</text>
+          <text x="35" y="80" font-size="6" fill="#6B6B6B" font-family="Inter">AGE</text>
+          <text x="55" y="80" font-size="6" fill="#6B6B6B" font-family="Inter">SPEED</text>
+          <text x="82" y="80" font-size="6" fill="#6B6B6B" font-family="Inter">MILES</text>
+          <text x="105" y="80" font-size="6" fill="#6B6B6B" font-family="Inter">OUT</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">12 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13 — 交叉分組熱力圖 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Insight</div>
+      <h2>交叉分組才有洞察</h2>
+      <p style="margin: 0.8em 0;">單看「年齡」或「車齡」不夠 &mdash; 要看<em>組合</em></p>
+      <div class="svg-container">
+        <svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="150" y="15" text-anchor="middle" font-size="10" font-weight="600" fill="#1A1A1A" font-family="Inter">AGE &times; VEHICLE_YEAR 理賠率</text>
+          <!-- Headers -->
+          <text x="130" y="40" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">新車</text>
+          <text x="195" y="40" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">中古</text>
+          <text x="260" y="40" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">老車</text>
+          <!-- Row labels -->
+          <text x="55" y="70" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">16-25</text>
+          <text x="55" y="115" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">26-39</text>
+          <text x="55" y="160" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">40-64</text>
+          <!-- Cells -->
+          <rect x="95" y="50" width="65" height="35" fill="#D4480B" opacity="0.95" rx="2"/>
+          <text x="127" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Inter">42%</text>
+          <rect x="165" y="50" width="65" height="35" fill="#D4480B" opacity="0.7" rx="2"/>
+          <text x="197" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Inter">35%</text>
+          <rect x="235" y="50" width="65" height="35" fill="#D4480B" opacity="0.5" rx="2"/>
+          <text x="267" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Inter">28%</text>
+          <rect x="95" y="95" width="65" height="35" fill="#D4480B" opacity="0.4" rx="2"/>
+          <text x="127" y="117" text-anchor="middle" font-size="11" font-weight="600" fill="#fff" font-family="Inter">22%</text>
+          <rect x="165" y="95" width="65" height="35" fill="#D4480B" opacity="0.35" rx="2"/>
+          <text x="197" y="117" text-anchor="middle" font-size="11" font-weight="600" fill="#fff" font-family="Inter">18%</text>
+          <rect x="235" y="95" width="65" height="35" fill="#D4480B" opacity="0.25" rx="2"/>
+          <text x="267" y="117" text-anchor="middle" font-size="11" font-weight="600" fill="#fff" font-family="Inter">15%</text>
+          <rect x="95" y="140" width="65" height="35" fill="#D4480B" opacity="0.2" rx="2"/>
+          <text x="127" y="162" text-anchor="middle" font-size="11" font-weight="600" fill="#1A1A1A" font-family="Inter">12%</text>
+          <rect x="165" y="140" width="65" height="35" fill="#D4480B" opacity="0.15" rx="2"/>
+          <text x="197" y="162" text-anchor="middle" font-size="11" font-weight="600" fill="#1A1A1A" font-family="Inter">10%</text>
+          <rect x="235" y="140" width="65" height="35" fill="#D4480B" opacity="0.1" rx="2"/>
+          <text x="267" y="162" text-anchor="middle" font-size="11" font-weight="600" fill="#1A1A1A" font-family="Inter">8%</text>
+        </svg>
+      </div>
+    </div>
+    <div class="panel" style="flex: 0.6; background: var(--accent-light); justify-content: center;">
+      <div class="card-accent">
+        <h3 style="color: var(--accent);">商業問題</h3>
+        <p style="margin-top: 0.5em;"><strong>年輕人開新車，理賠率最高？</strong></p>
+        <p style="margin-top: 0.3em;">特徵的「組合」比單一變數更有洞察力</p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">13 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14 — Section Divider: 建模 -->
+<!-- ============================================================ -->
+<div class="slide section-divider">
+  <div class="label">Part 02</div>
+  <h1 style="margin-bottom: 0.3em;">從「看到規律」<br>到「預測未來」</h1>
+  <p class="subtitle" style="color: rgba(255,255,255,0.5);">建立、評估、比較模型</p>
+  <span class="page-num">14 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15 — Benchmark 思維 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Principle</div>
+    <h2>Benchmark 思維</h2>
+    <div class="quote-block" style="margin: 0.8em 0; font-size: var(--h3-size);">
+      先煮好白飯，再挑戰炒飯
+    </div>
+    <p style="margin-bottom: 1em;">新手最常犯的錯：上來直接選最酷炫的模型。就像第一次去健身房就挑最重的啞鈴 &mdash; 結果受傷。</p>
+    <div class="card" style="max-width: 600px;">
+      <div class="tag-accent tag" style="margin-bottom: 0.5em;">Baseline Model</div>
+      <h3>Logistic Regression</h3>
+      <p style="margin-top: 0.3em;">分類界的白飯 &mdash; 不花俏，但<strong>穩定、能解釋、大家都懂</strong>。<br>後面的模型如果只進步 2%，可能不值得用更複雜的方法</p>
+    </div>
+  </div>
+  <span class="page-num">15 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16 — Demo: Logistic Regression -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Demo</div>
+    <h2>帶做 Logistic Regression</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--element-gap); margin-top: 0.5em;">
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">Step 1 &mdash; 前處理</span>
+        <div class="code-block" style="margin-top: 0.4em;">請將資料做 train/test split（80/20, random_state=42），<br>類別欄位做 one-hot encoding，數值欄位做 StandardScaler</div>
+      </div>
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">Step 2 &mdash; 建模 &amp; 評估</span>
+        <div class="code-block" style="margin-top: 0.4em;">用 Logistic Regression 預測 OUTCOME，<br>印出迴歸係數表、classification report、<br>混淆矩陣（用 heatmap 畫出來）</div>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">16 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17 — 解讀迴歸係數 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Interpretation</div>
+    <h2>解讀迴歸係數</h2>
+    <div class="compare-row" style="margin-top: 0.8em;">
+      <div class="compare-col">
+        <div class="card-accent" style="border-left-color: var(--accent); height: 100%;">
+          <h3 style="color: var(--accent);">正係數 = 風險 &uarr;</h3>
+          <p style="margin-top: 0.3em;">超速紀錄越多，理賠機率越高</p>
+          <p style="margin-top: 0.5em; font-size: var(--small-size);">例：SPEEDING_PENALTIES +0.45</p>
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="card-green" style="height: 100%;">
+          <h3 style="color: var(--green);">負係數 = 風險 &darr;</h3>
+          <p style="margin-top: 0.3em;">駕齡越長，理賠機率越低</p>
+          <p style="margin-top: 0.5em; font-size: var(--small-size);">例：DRIVING_EXPERIENCE -0.32</p>
+        </div>
+      </div>
+    </div>
+    <div class="divider" style="margin-top: 1em;"></div>
+    <div class="card-accent" style="margin-top: 0.5em;">
+      <p><strong>p-value &lt; 0.05</strong> = 統計顯著，這個變數真的有影響。有沒有你覺得應該重要、但 p-value 很大的變數？</p>
+    </div>
+  </div>
+  <span class="page-num">17 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18 — Accuracy 85% 的騙局 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 0.7; align-items: center; background: var(--gray-bg);">
+      <div class="big-number" style="opacity: 0.3; text-decoration: line-through;">85%</div>
+      <p style="font-weight: 600; color: var(--black); margin-top: 0.3em;">Accuracy 不夠用</p>
+    </div>
+    <div class="panel" style="flex: 1.3;">
+      <div class="label">Insight</div>
+      <h2 style="margin-bottom: 0.5em;">Accuracy 的騙局</h2>
+      <p style="margin-bottom: 1em;">如果 85% 的人沒理賠，寫一個永遠猜「不理賠」的模型 accuracy 也是 85%。<br>就像氣象預報員每天說「不地震」&mdash; 準確率 99.99%，但完全沒用</p>
+      <div class="grid-2x2">
+        <div class="metric-card">
+          <h3>Accuracy</h3>
+          <p>整體猜對比例<br><em>不適合不平衡資料</em></p>
+        </div>
+        <div class="metric-card" style="border-color: var(--accent);">
+          <h3>Precision</h3>
+          <p>「說有理賠」的<br>裡面真的有幾個</p>
+        </div>
+        <div class="metric-card" style="border-color: var(--accent);">
+          <h3>Recall</h3>
+          <p>真正會理賠的<br>你抓到了幾個</p>
+        </div>
+        <div class="metric-card">
+          <h3>F1-Score</h3>
+          <p>Precision &amp; Recall<br>的調和平均</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">18 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19 — 混淆矩陣 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content" style="align-items: center;">
+    <div class="label">Key Concept</div>
+    <h2>混淆矩陣：漏網之魚最致命</h2>
+    <div class="svg-container" style="padding: 1.5rem 0;">
+      <svg width="420" height="280" viewBox="0 0 420 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Headers -->
+        <text x="260" y="25" text-anchor="middle" font-size="11" font-weight="600" fill="#1A1A1A" font-family="Inter">預測</text>
+        <text x="195" y="50" text-anchor="middle" font-size="10" fill="#6B6B6B" font-family="Inter">沒理賠</text>
+        <text x="325" y="50" text-anchor="middle" font-size="10" fill="#6B6B6B" font-family="Inter">有理賠</text>
+        <text x="55" y="130" text-anchor="middle" font-size="11" font-weight="600" fill="#1A1A1A" font-family="Inter" transform="rotate(-90, 55, 130)">實際</text>
+        <text x="90" y="115" text-anchor="middle" font-size="10" fill="#6B6B6B" font-family="Inter">沒理賠</text>
+        <text x="90" y="205" text-anchor="middle" font-size="10" fill="#6B6B6B" font-family="Inter">有理賠</text>
+        <!-- TN -->
+        <rect x="120" y="65" width="140" height="80" fill="#E8F5EC" stroke="#1B7A3D" stroke-width="2" rx="2"/>
+        <text x="190" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#1B7A3D" font-family="Inter">TN</text>
+        <text x="190" y="118" text-anchor="middle" font-size="9" fill="#1B7A3D" font-family="Inter">猜對沒理賠</text>
+        <text x="190" y="135" text-anchor="middle" font-size="9" fill="#1B7A3D" font-family="Inter">&#10003;</text>
+        <!-- FP -->
+        <rect x="270" y="65" width="140" height="80" fill="#FFF0E8" stroke="#E0E0E0" stroke-width="2" rx="2"/>
+        <text x="340" y="100" text-anchor="middle" font-size="13" font-weight="700" fill="#6B6B6B" font-family="Inter">FP</text>
+        <text x="340" y="118" text-anchor="middle" font-size="9" fill="#6B6B6B" font-family="Inter">虛驚一場（誤判）</text>
+        <!-- FN - highlighted -->
+        <rect x="120" y="155" width="140" height="80" fill="#D4480B" stroke="#D4480B" stroke-width="2" rx="2"/>
+        <text x="190" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF" font-family="Inter">FN</text>
+        <text x="190" y="208" text-anchor="middle" font-size="9" fill="#FFFFFF" font-family="Inter">漏網之魚（漏判）</text>
+        <text x="190" y="225" text-anchor="middle" font-size="11" fill="#FFFFFF" font-family="Inter">&#9733; 最危險</text>
+        <!-- TP -->
+        <rect x="270" y="155" width="140" height="80" fill="#E8F5EC" stroke="#1B7A3D" stroke-width="2" rx="2"/>
+        <text x="340" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#1B7A3D" font-family="Inter">TP</text>
+        <text x="340" y="208" text-anchor="middle" font-size="9" fill="#1B7A3D" font-family="Inter">猜對有理賠</text>
+        <text x="340" y="225" text-anchor="middle" font-size="9" fill="#1B7A3D" font-family="Inter">&#10003;</text>
+      </svg>
+    </div>
+    <div class="card-accent" style="max-width: 550px;">
+      <p><strong>FP</strong> = 你以為他會理賠，結果沒有 &mdash; 虛驚一場，沒損失<br>
+      <strong>FN</strong> = 你以為他不會理賠，結果出事了 &mdash; <em>公司賠大錢</em><br>
+      <strong>產險結論：</strong>Recall &gt; Precision &mdash; 寧可多查，不能漏掉</p>
+    </div>
+  </div>
+  <span class="page-num">19 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20 — Section Divider: 四大模型 -->
+<!-- ============================================================ -->
+<div class="slide section-divider">
+  <div class="label">Part 03</div>
+  <h1 style="margin-bottom: 0.3em;">四大進階分類模型</h1>
+  <p class="subtitle" style="color: rgba(255,255,255,0.5);">挑戰 Logistic Regression 基準線</p>
+  <span class="page-num">20 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 21 — Decision Tree -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Model 01</div>
+      <h2>Decision Tree</h2>
+      <p style="margin: 0.5em 0;">你每天都在用：「肚子餓嗎？」&rarr; 是 &rarr;「有錢嗎？」&rarr; 沒有 &rarr;「吃泡麵」</p>
+      <div class="compare-row" style="margin-top: 1em;">
+        <div class="compare-col">
+          <div class="card-green">
+            <h3 style="color: var(--green);">優點</h3>
+            <p>直覺好解釋<br>可以畫圖給不懂技術的主管看</p>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="card-accent">
+            <h3 style="color: var(--accent);">缺點</h3>
+            <p>容易過擬合 &mdash; 段考很高但模擬考爆炸，因為只會背不會活用</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="flex: 1; background: var(--gray-bg); align-items: center;">
+      <svg width="280" height="220" viewBox="0 0 280 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Root node -->
+        <rect x="90" y="10" width="100" height="36" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF" rx="2"/>
+        <text x="140" y="33" text-anchor="middle" font-size="10" font-weight="600" fill="#1A1A1A" font-family="Inter, Noto Sans TC">年齡 &lt; 25?</text>
+        <!-- Left branch -->
+        <line x1="115" y1="46" x2="60" y2="80" stroke="#1A1A1A" stroke-width="1.5"/>
+        <text x="75" y="65" font-size="8" fill="#1B7A3D" font-family="Inter">Yes</text>
+        <rect x="10" y="80" width="100" height="36" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF" rx="2"/>
+        <text x="60" y="103" text-anchor="middle" font-size="10" font-weight="600" fill="#1A1A1A" font-family="Inter, Noto Sans TC">超速紀錄?</text>
+        <!-- Right branch -->
+        <line x1="165" y1="46" x2="220" y2="80" stroke="#1A1A1A" stroke-width="1.5"/>
+        <text x="200" y="65" font-size="8" fill="#D4480B" font-family="Inter">No</text>
+        <rect x="170" y="80" width="100" height="36" stroke="#1B7A3D" stroke-width="2" fill="#E8F5EC" rx="2"/>
+        <text x="220" y="103" text-anchor="middle" font-size="10" font-weight="600" fill="#1B7A3D" font-family="Inter, Noto Sans TC">低風險</text>
+        <!-- Left-left -->
+        <line x1="40" y1="116" x2="25" y2="155" stroke="#1A1A1A" stroke-width="1.5"/>
+        <text x="22" y="140" font-size="8" fill="#1B7A3D" font-family="Inter">Yes</text>
+        <rect x="0" y="155" width="55" height="36" fill="#D4480B" stroke="#D4480B" stroke-width="2" rx="2"/>
+        <text x="27" y="178" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF" font-family="Inter, Noto Sans TC">高風險</text>
+        <!-- Left-right -->
+        <line x1="80" y1="116" x2="95" y2="155" stroke="#1A1A1A" stroke-width="1.5"/>
+        <text x="97" y="140" font-size="8" fill="#D4480B" font-family="Inter">No</text>
+        <rect x="65" y="155" width="55" height="36" stroke="#1A1A1A" stroke-width="2" fill="#FFF0E8" rx="2"/>
+        <text x="92" y="178" text-anchor="middle" font-size="9" font-weight="600" fill="#D4480B" font-family="Inter, Noto Sans TC">中風險</text>
+      </svg>
+    </div>
+  </div>
+  <span class="page-num">21 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 22 — Random Forest -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Model 02</div>
+      <h2>Random Forest</h2>
+      <p style="margin: 0.5em 0;">問 100 個朋友推薦哪間餐廳，多數決 &mdash; 集體智慧</p>
+      <div class="compare-row" style="margin-top: 1em;">
+        <div class="compare-col">
+          <div class="card-green">
+            <h3 style="color: var(--green);">優點</h3>
+            <p>穩定不易過擬合<br>可看特徵重要性</p>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="card-accent">
+            <h3 style="color: var(--accent);">缺點</h3>
+            <p>不好解釋單一預測<br>訓練較慢</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="flex: 1; background: var(--gray-bg); align-items: center;">
+      <svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tree 1 -->
+        <line x1="50" y1="60" x2="35" y2="90" stroke="#1A1A1A"/>
+        <line x1="50" y1="60" x2="65" y2="90" stroke="#1A1A1A"/>
+        <circle cx="50" cy="55" r="12" stroke="#1A1A1A" stroke-width="1.5" fill="#FFFFFF"/>
+        <circle cx="35" cy="95" r="8" stroke="#1A1A1A" fill="#E8F5EC"/>
+        <circle cx="65" cy="95" r="8" stroke="#1A1A1A" fill="#FFF0E8"/>
+        <text x="50" y="120" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">Tree 1</text>
+        <!-- Tree 2 -->
+        <line x1="120" y1="60" x2="105" y2="90" stroke="#1A1A1A"/>
+        <line x1="120" y1="60" x2="135" y2="90" stroke="#1A1A1A"/>
+        <circle cx="120" cy="55" r="12" stroke="#1A1A1A" stroke-width="1.5" fill="#FFFFFF"/>
+        <circle cx="105" cy="95" r="8" stroke="#1A1A1A" fill="#FFF0E8"/>
+        <circle cx="135" cy="95" r="8" stroke="#1A1A1A" fill="#FFF0E8"/>
+        <text x="120" y="120" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">Tree 2</text>
+        <!-- Tree 3 -->
+        <line x1="190" y1="60" x2="175" y2="90" stroke="#1A1A1A"/>
+        <line x1="190" y1="60" x2="205" y2="90" stroke="#1A1A1A"/>
+        <circle cx="190" cy="55" r="12" stroke="#1A1A1A" stroke-width="1.5" fill="#FFFFFF"/>
+        <circle cx="175" cy="95" r="8" stroke="#1A1A1A" fill="#E8F5EC"/>
+        <circle cx="205" cy="95" r="8" stroke="#1A1A1A" fill="#E8F5EC"/>
+        <text x="190" y="120" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">Tree 3</text>
+        <!-- ... dots -->
+        <text x="240" y="80" font-size="20" fill="#6B6B6B" font-family="Inter">...</text>
+        <!-- Tree N -->
+        <line x1="280" y1="60" x2="265" y2="90" stroke="#1A1A1A"/>
+        <line x1="280" y1="60" x2="295" y2="90" stroke="#1A1A1A"/>
+        <circle cx="280" cy="55" r="12" stroke="#1A1A1A" stroke-width="1.5" fill="#FFFFFF"/>
+        <circle cx="265" cy="95" r="8" stroke="#1A1A1A" fill="#FFF0E8"/>
+        <circle cx="295" cy="95" r="8" stroke="#1A1A1A" fill="#E8F5EC"/>
+        <text x="280" y="120" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">Tree 100</text>
+        <!-- Voting arrows -->
+        <path d="M50 125 L150 150" stroke="#D4480B" stroke-width="1.5" stroke-dasharray="4"/>
+        <path d="M120 125 L150 150" stroke="#D4480B" stroke-width="1.5" stroke-dasharray="4"/>
+        <path d="M190 125 L150 150" stroke="#D4480B" stroke-width="1.5" stroke-dasharray="4"/>
+        <path d="M280 125 L150 150" stroke="#D4480B" stroke-width="1.5" stroke-dasharray="4"/>
+        <!-- Vote box -->
+        <rect x="110" y="148" width="80" height="30" fill="#D4480B" rx="2"/>
+        <text x="150" y="168" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF" font-family="Inter">VOTE</text>
+        <!-- Result -->
+        <text x="150" y="195" text-anchor="middle" font-size="10" font-weight="600" fill="#1A1A1A" font-family="Inter, Noto Sans TC">&rarr; 最終結果</text>
+      </svg>
+    </div>
+  </div>
+  <span class="page-num">22 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 23 — SVM -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Model 03</div>
+      <h2>SVM</h2>
+      <p style="margin: 0.5em 0;">桌上紅球藍球混在一起，找一條線把它們分開，離兩邊越遠越好</p>
+      <div class="compare-row" style="margin-top: 1em;">
+        <div class="compare-col">
+          <div class="card-green">
+            <h3 style="color: var(--green);">優點</h3>
+            <p>高維度表現好<br>邊界清晰</p>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="card-accent">
+            <h3 style="color: var(--accent);">缺點</h3>
+            <p>速度慢、黑箱<br>需要標準化</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="flex: 1; background: var(--gray-bg); align-items: center;">
+      <svg width="260" height="220" viewBox="0 0 260 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Class A dots -->
+        <circle cx="40" cy="50" r="6" fill="#D4480B"/>
+        <circle cx="55" cy="80" r="6" fill="#D4480B"/>
+        <circle cx="30" cy="90" r="6" fill="#D4480B"/>
+        <circle cx="70" cy="60" r="6" fill="#D4480B"/>
+        <circle cx="50" cy="110" r="6" fill="#D4480B"/>
+        <circle cx="65" cy="100" r="6" fill="#D4480B"/>
+        <circle cx="45" cy="130" r="6" fill="#D4480B"/>
+        <circle cx="80" cy="85" r="6" fill="#D4480B"/>
+        <!-- Class B dots -->
+        <circle cx="180" cy="100" r="6" fill="#1A1A1A"/>
+        <circle cx="200" cy="130" r="6" fill="#1A1A1A"/>
+        <circle cx="190" cy="160" r="6" fill="#1A1A1A"/>
+        <circle cx="210" cy="110" r="6" fill="#1A1A1A"/>
+        <circle cx="220" cy="150" r="6" fill="#1A1A1A"/>
+        <circle cx="175" cy="140" r="6" fill="#1A1A1A"/>
+        <circle cx="230" cy="130" r="6" fill="#1A1A1A"/>
+        <circle cx="195" cy="85" r="6" fill="#1A1A1A"/>
+        <!-- Decision boundary -->
+        <line x1="130" y1="20" x2="130" y2="200" stroke="#D4480B" stroke-width="2.5"/>
+        <!-- Margin lines -->
+        <line x1="100" y1="20" x2="100" y2="200" stroke="#D4480B" stroke-width="1" stroke-dasharray="6"/>
+        <line x1="160" y1="20" x2="160" y2="200" stroke="#D4480B" stroke-width="1" stroke-dasharray="6"/>
+        <!-- Margin arrows -->
+        <line x1="100" y1="185" x2="130" y2="185" stroke="#6B6B6B" stroke-width="1"/>
+        <line x1="130" y1="185" x2="160" y2="185" stroke="#6B6B6B" stroke-width="1"/>
+        <text x="130" y="210" text-anchor="middle" font-size="9" fill="#6B6B6B" font-family="Inter">Maximum Margin</text>
+        <!-- Labels -->
+        <text x="50" y="170" text-anchor="middle" font-size="9" font-weight="600" fill="#D4480B" font-family="Inter, Noto Sans TC">有理賠</text>
+        <text x="205" y="55" text-anchor="middle" font-size="9" font-weight="600" fill="#1A1A1A" font-family="Inter, Noto Sans TC">沒理賠</text>
+        <!-- Support vectors -->
+        <circle cx="80" cy="85" r="10" stroke="#D4480B" stroke-width="1.5" fill="none"/>
+        <circle cx="175" cy="140" r="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+  </div>
+  <span class="page-num">23 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 24 — XGBoost -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-split">
+    <div class="panel" style="flex: 1;">
+      <div class="label">Model 04</div>
+      <h2>XGBoost</h2>
+      <p style="margin: 0.5em 0;">考完試檢討錯誤，針對錯的加強，一次比一次進步 &mdash; Kaggle 競賽捲王</p>
+      <div class="compare-row" style="margin-top: 1em;">
+        <div class="compare-col">
+          <div class="card-green">
+            <h3 style="color: var(--green);">優點</h3>
+            <p>通常最準、速度快<br>可算特徵重要性</p>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="card-accent">
+            <h3 style="color: var(--accent);">缺點</h3>
+            <p>參數多要調（學習率、樹深度等），今天用 AI 幫你處理</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="flex: 1; background: var(--gray-bg); align-items: center;">
+      <svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tree 1 -->
+        <rect x="10" y="40" width="60" height="50" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF" rx="2"/>
+        <text x="40" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#1A1A1A" font-family="Inter">Tree 1</text>
+        <text x="40" y="72" text-anchor="middle" font-size="7" fill="#6B6B6B" font-family="Inter">初始預測</text>
+        <!-- Arrow + error -->
+        <path d="M75 65 L105 65" stroke="#D4480B" stroke-width="2"/>
+        <polygon points="103,59 115,65 103,71" fill="#D4480B"/>
+        <text x="95" y="55" font-size="7" fill="#D4480B" font-family="Inter" font-weight="600">殘差</text>
+        <!-- Tree 2 -->
+        <rect x="120" y="40" width="60" height="50" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF" rx="2"/>
+        <text x="150" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#1A1A1A" font-family="Inter">Tree 2</text>
+        <text x="150" y="72" text-anchor="middle" font-size="7" fill="#6B6B6B" font-family="Inter">修正錯誤</text>
+        <!-- Arrow + error -->
+        <path d="M185 65 L215 65" stroke="#D4480B" stroke-width="2"/>
+        <polygon points="213,59 225,65 213,71" fill="#D4480B"/>
+        <text x="205" y="55" font-size="7" fill="#D4480B" font-family="Inter" font-weight="600">殘差</text>
+        <!-- Tree 3 -->
+        <rect x="230" y="40" width="60" height="50" stroke="#1A1A1A" stroke-width="2" fill="#FFFFFF" rx="2"/>
+        <text x="260" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#1A1A1A" font-family="Inter">Tree N</text>
+        <text x="260" y="72" text-anchor="middle" font-size="7" fill="#6B6B6B" font-family="Inter">再修正</text>
+        <!-- Error decreasing bars -->
+        <text x="150" y="115" text-anchor="middle" font-size="9" font-weight="600" fill="#1A1A1A" font-family="Inter, Noto Sans TC">錯誤率逐步下降</text>
+        <rect x="30" y="125" width="40" height="50" fill="#D4480B" opacity="0.8" rx="2"/>
+        <rect x="80" y="140" width="40" height="35" fill="#D4480B" opacity="0.6" rx="2"/>
+        <rect x="130" y="150" width="40" height="25" fill="#D4480B" opacity="0.45" rx="2"/>
+        <rect x="180" y="158" width="40" height="17" fill="#D4480B" opacity="0.3" rx="2"/>
+        <rect x="230" y="163" width="40" height="12" fill="#D4480B" opacity="0.2" rx="2"/>
+        <line x1="25" y1="175" x2="275" y2="175" stroke="#1A1A1A" stroke-width="1"/>
+        <text x="150" y="190" text-anchor="middle" font-size="8" fill="#6B6B6B" font-family="Inter">Iterations &rarr;</text>
+      </svg>
+    </div>
+  </div>
+  <span class="page-num">24 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 25 — 五大模型比較表 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Comparison</div>
+    <h2>五大模型比較</h2>
+    <table style="margin-top: 0.8em;">
+      <thead>
+        <tr><th>模型</th><th>可解釋性</th><th>準確度潛力</th><th>訓練速度</th><th>過擬合風險</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Logistic Regression</strong></td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>低</td></tr>
+        <tr><td><strong>Decision Tree</strong></td><td>&#9733;&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;</td><td><em>高</em></td></tr>
+        <tr><td><strong>Random Forest</strong></td><td>&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;</td><td>低</td></tr>
+        <tr><td><strong>SVM</strong></td><td>&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;</td><td>中</td></tr>
+        <tr><td><strong>XGBoost</strong></td><td>&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>中</td></tr>
+      </tbody>
+    </table>
+    <div class="card-accent" style="margin-top: 1em;">
+      <p><strong>準確度最高 &ne; 最好。</strong>金管會問你「為什麼對這個客戶加費？」你說「100 棵樹投票的」&mdash; 金管會：？？？<br><em>可解釋性是產險的剛需</em>，這也是 Logistic Regression 至今仍是精算主流的原因</p>
+    </div>
+  </div>
+  <span class="page-num">25 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 26 — Section Divider: 實作 -->
+<!-- ============================================================ -->
+<div class="slide section-divider">
+  <div class="label">Part 04</div>
+  <h1 style="margin-bottom: 0.3em;">輪到你們上場了</h1>
+  <p class="subtitle" style="color: rgba(255,255,255,0.5);">動手挑戰 Benchmark</p>
+  <span class="page-num">26 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 27 — 任務說明 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content" style="align-items: center; text-align: center;">
+    <div class="label">Challenge</div>
+    <h2>實作任務</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--element-gap); max-width: 600px; margin-top: 1em; text-align: left;">
+      <div class="card" style="border-color: var(--accent);">
+        <h3>自選 &ge; 1 個進階模型</h3>
+        <p>Decision Tree / Random Forest / SVM / XGBoost</p>
+      </div>
+      <div class="card">
+        <h3>挑戰 LR Benchmark</h3>
+        <p>用相同資料、相同切分，比較四大指標</p>
+      </div>
+      <div class="card">
+        <h3>工具：Antigravity Vibe Coding</h3>
+        <p>用中文 Prompt 指揮 AI 幫你完成</p>
+      </div>
+    </div>
+    <div class="tag-accent tag" style="margin-top: 1em; font-size: var(--body-size); padding: 0.3em 1em;">
+      random_state = 42（確保公平比較）
+    </div>
+  </div>
+  <span class="page-num">27 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 28 — Prompt 範本（上） -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Prompt Templates</div>
+    <h2>Prompt 範本（上）</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--element-gap); margin-top: 0.5em;">
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">Decision Tree</span>
+        <div class="code-block" style="margin-top: 0.4em;">用 Decision Tree（max_depth=5, random_state=42）預測 OUTCOME。<br>畫出混淆矩陣和 classification report，<br>再畫出特徵重要性排名前 10 的長條圖。</div>
+      </div>
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">Random Forest</span>
+        <div class="code-block" style="margin-top: 0.4em;">用 Random Forest（n_estimators=100, random_state=42）預測 OUTCOME。<br>印出 classification report 和混淆矩陣，<br>畫出特徵重要性排名。</div>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">28 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 29 — Prompt 範本（下） -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Prompt Templates</div>
+    <h2>Prompt 範本（下）</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--element-gap); margin-top: 0.5em;">
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">SVM</span>
+        <div class="code-block" style="margin-top: 0.4em;">用 SVM（kernel='rbf', random_state=42）預測 OUTCOME。<br><em>注意：SVM 需要做 StandardScaler 標準化。</em><br>印出 classification report 和混淆矩陣。</div>
+      </div>
+      <div>
+        <span class="tag" style="margin-bottom: 0.4em;">XGBoost</span>
+        <div class="code-block" style="margin-top: 0.4em;">用 XGBoost（n_estimators=100, max_depth=5,<br>learning_rate=0.1, random_state=42）預測 OUTCOME。<br>印出 classification report、混淆矩陣，<br>畫出 XGBoost 的特徵重要性排名。</div>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">29 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 30 — 精算洞察報告 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Deliverable</div>
+    <h2>精算洞察報告</h2>
+    <p style="margin-bottom: 0.8em;"><strong>情境：</strong>明天你要進會議室跟總經理報告 &mdash; 不能打開程式碼說「你看我的 confusion matrix」，他會覺得你在念咒語</p>
+    <div class="card-row">
+      <div class="card">
+        <span class="principle-num">1</span>
+        <h3 style="margin-top: 0.3em;">模型選擇</h3>
+        <p>用了哪個模型？為什麼選它？</p>
+      </div>
+      <div class="card">
+        <span class="principle-num">2</span>
+        <h3 style="margin-top: 0.3em;">風險因子</h3>
+        <p>找出 2-3 個關鍵風險因子</p>
+      </div>
+      <div class="card">
+        <span class="principle-num">3</span>
+        <h3 style="margin-top: 0.3em;">高風險客群</h3>
+        <p>哪些人最容易理賠？</p>
+      </div>
+      <div class="card">
+        <span class="principle-num">4</span>
+        <h3 style="margin-top: 0.3em;">保費建議</h3>
+        <p>具體的定價策略建議</p>
+      </div>
+    </div>
+    <div class="card-accent" style="margin-top: 0.8em;">
+      <p>不能用 confusion matrix 跟老闆報告 &mdash; <strong>要翻譯成人話</strong></p>
+    </div>
+  </div>
+  <span class="page-num">30 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 31 — 報告範例 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content" style="align-items: center; text-align: center;">
+    <div class="label">Example</div>
+    <h2>報告範例</h2>
+    <div class="quote-block" style="max-width: 600px; margin: 1.5em auto; text-align: left; font-size: var(--h3-size);">
+      「建議調高 16-25 歲且擁有超速紀錄駕駛的保費 30%，因理賠機率 75%，遠高於平均 20%」
+    </div>
+    <div style="display: flex; gap: 2em; justify-content: center; align-items: baseline; margin-top: 1em;">
+      <div style="text-align: center;">
+        <div class="big-number-inline" style="color: var(--accent);">75%</div>
+        <p style="font-weight: 600; color: var(--black);">高風險客群理賠率</p>
+      </div>
+      <div style="text-align: center; color: var(--gray);">
+        <span style="font-size: var(--h2-size);">vs</span>
+      </div>
+      <div style="text-align: center;">
+        <div class="big-number-inline" style="color: var(--gray);">20%</div>
+        <p style="font-weight: 600; color: var(--gray);">整體平均理賠率</p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">31 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 32 — 公平待客原則 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content">
+    <div class="label">Ethics</div>
+    <h2>公平待客原則</h2>
+    <div class="compare-row" style="margin-top: 1em;">
+      <div class="compare-col">
+        <div class="card-accent" style="height: 100%;">
+          <div class="tag-accent tag" style="margin-bottom: 0.5em;">技術上做得到</div>
+          <h3>模型顯示某族群風險高</h3>
+          <p style="margin-top: 0.5em;">性別、種族都可以放進模型，而且確實有預測力</p>
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="card" style="border-width: 2px; height: 100%;">
+          <div class="tag" style="margin-bottom: 0.5em;">倫理上不應該</div>
+          <h3>保險歧視 &amp; 公平性</h3>
+          <p style="margin-top: 0.5em;">先天特徵不能差別定價。<strong>公平待客原則</strong>是金管會要求。</p>
+        </div>
+      </div>
+    </div>
+    <div class="divider" style="margin-top: 1.5em;"></div>
+    <div class="card-accent" style="margin-top: 0.5em;">
+      <p><strong>做法：</strong>直接拿掉不該用的變數，或只用於內部分析不用來定價<br>
+      <strong>AI 倫理不只保險：</strong>招聘、貸款、刑事判決都面臨演算法偏見 &mdash; 你們這一代一定會遇到</p>
+    </div>
+  </div>
+  <span class="page-num">32 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 33 — 三堂課總回顧 -->
+<!-- ============================================================ -->
+<div class="slide">
+  <div class="slide-content" style="align-items: center;">
+    <div class="label">Takeaway</div>
+    <h2>三堂課總回顧</h2>
+    <div class="principle-grid" style="margin-top: 1.5em; max-width: 700px;">
+      <div class="principle-item">
+        <div class="principle-num">1</div>
+        <h3 style="margin-top: 0.3em;">EDA 先行</h3>
+        <p style="margin-top: 0.3em;">跳過 EDA 直接建模，就像不看地圖就開車 &mdash; 你可能到，但更可能迷路</p>
+      </div>
+      <div class="principle-item">
+        <div class="principle-num">2</div>
+        <h3 style="margin-top: 0.3em;">建模比較</h3>
+        <p style="margin-top: 0.3em;">先有 Benchmark，再挑戰進階模型。產險場景 <em>Recall &gt; Accuracy</em></p>
+      </div>
+      <div class="principle-item">
+        <div class="principle-num">3</div>
+        <h3 style="margin-top: 0.3em;">商業判斷</h3>
+        <p style="margin-top: 0.3em;">把分析翻譯成人話，考慮公平性。模型只是工具，決策靠人</p>
+      </div>
+    </div>
+  </div>
+  <span class="page-num">33 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 34 — 核心觀念 -->
+<!-- ============================================================ -->
+<div class="slide slide-center" style="background: var(--cream);">
+  <div class="label">Core Message</div>
+  <h1 style="max-width: 700px; font-size: clamp(1.6rem, 4vw, 3rem); line-height: 1.3; margin-bottom: 0.8em;">
+    概念是你的，<br>AI 只是幫你執行
+  </h1>
+  <div class="cover-line"></div>
+  <p style="max-width: 600px; margin-top: 1em; font-size: var(--h3-size); line-height: 1.8; color: var(--gray);">
+    統計素養和商業直覺，才是你們真正的競爭力。<br>
+    <strong style="color: var(--black);">AI 取代不了會思考的人，只會取代不願意思考的人。</strong>
+  </p>
+  <span class="page-num">34 / 35</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 35 — Thank you -->
+<!-- ============================================================ -->
+<div class="slide section-divider">
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 1em;">
+    <h1 style="font-size: clamp(2.5rem, 7vw, 5rem); color: var(--white);">謝謝大家</h1>
+    <div class="cover-line" style="background: var(--accent);"></div>
+    <div style="margin-top: 1.5em; text-align: center;">
+      <p style="color: rgba(255,255,255,0.7); font-size: var(--body-size);">侯冠宇</p>
+      <p style="color: rgba(255,255,255,0.5); font-size: var(--small-size); margin-top: 0.5em;">喬泰科技 AI 系統架構師</p>
+      <p style="color: rgba(255,255,255,0.5); font-size: var(--small-size);">國立高雄科技大學 博士研究生</p>
+      <div class="divider" style="width: 60px; margin: 1em auto; background: rgba(255,255,255,0.2);"></div>
+      <p style="color: rgba(255,255,255,0.4); font-size: var(--small-size);">有問題隨時找我</p>
+    </div>
+  </div>
+  <span class="page-num">35 / 35</span>
+</div>
+
+<!-- Navigation hint -->
+<div class="nav-hint">&larr; &rarr; 鍵切換投影片</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  function goTo(i) {
+    i = Math.max(0, Math.min(i, slides.length - 1));
+    slides[i].scrollIntoView({ behavior: 'smooth' });
+    current = i;
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(current - 1); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) current = Array.from(slides).indexOf(e.target); });
+  }, { threshold: 0.5 });
+  slides.forEach(s => observer.observe(s));
+  setTimeout(() => { document.querySelector('.nav-hint').style.opacity = '0'; }, 5000);
+})();
+</script>
+
+</body>
+</html>

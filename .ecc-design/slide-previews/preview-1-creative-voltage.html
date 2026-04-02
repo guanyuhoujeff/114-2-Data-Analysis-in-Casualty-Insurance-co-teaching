@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview: Creative Voltage</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+.slide {
+  width: 100vw; height: 100vh; height: 100dvh;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: #0a1128;
+  position: relative;
+  font-family: 'Syne', sans-serif;
+}
+/* Halftone texture */
+.slide::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(0,200,255,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: 1;
+}
+.content {
+  position: relative; z-index: 2;
+  text-align: center;
+  padding: clamp(1rem, 4vw, 4rem);
+}
+.badge {
+  display: inline-block;
+  background: #ffe600;
+  color: #0a1128;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(0.6rem, 1.2vw, 0.85rem);
+  font-weight: 700;
+  padding: 0.4em 1.2em;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: clamp(0.8rem, 2vw, 1.5rem);
+  animation: float 3s ease-in-out infinite;
+}
+h1 {
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+}
+h1 span {
+  color: #00c8ff;
+  text-shadow: 0 0 30px rgba(0,200,255,0.4);
+}
+.subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(0.7rem, 1.5vw, 1.1rem);
+  color: rgba(255,255,255,0.6);
+  margin-top: clamp(0.5rem, 1vw, 1rem);
+}
+.accent-line {
+  width: clamp(60px, 10vw, 120px);
+  height: 4px;
+  background: linear-gradient(90deg, #ffe600, #00c8ff);
+  margin: clamp(0.8rem, 2vw, 1.5rem) auto;
+  border-radius: 2px;
+}
+.tag {
+  display: inline-block;
+  border: 1px solid rgba(0,200,255,0.3);
+  color: #00c8ff;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(0.55rem, 1vw, 0.75rem);
+  padding: 0.3em 0.8em;
+  border-radius: 4px;
+  margin: 0.2em;
+}
+/* Decorative circle */
+.deco-circle {
+  position: absolute;
+  width: clamp(200px, 30vw, 400px);
+  height: clamp(200px, 30vw, 400px);
+  border-radius: 50%;
+  border: 2px solid rgba(255,230,0,0.15);
+  top: -10%; right: -5%;
+  z-index: 0;
+  animation: spin 20s linear infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.2s !important;
+  }
+}
+</style>
+</head>
+<body>
+<section class="slide">
+  <div class="deco-circle"></div>
+  <div class="content">
+    <div class="badge">AI × Insurance × Vibe Coding</div>
+    <h1>產險資料分析<br><span>車險理賠預測實戰</span></h1>
+    <div class="accent-line"></div>
+    <p class="subtitle">從 0 到 1，不寫程式也能做資料科學</p>
+    <div style="margin-top: clamp(1rem, 2vw, 2rem);">
+      <span class="tag">Python</span>
+      <span class="tag">Machine Learning</span>
+      <span class="tag">Antigravity</span>
+    </div>
+  </div>
+</section>
+</body>
+</html>

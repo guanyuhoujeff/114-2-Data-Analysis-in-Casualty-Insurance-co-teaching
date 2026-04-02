@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview: Split Pastel</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+.slide {
+  width: 100vw; height: 100vh; height: 100dvh;
+  overflow: hidden; display: flex;
+  position: relative;
+  font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+}
+/* Split background */
+.left-panel {
+  flex: 1;
+  background: #ffecd2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 5vw, 5rem);
+  position: relative;
+}
+.right-panel {
+  flex: 1;
+  background: #e0d4f5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(1.5rem, 5vw, 5rem);
+  position: relative;
+}
+/* Subtle grid overlay */
+.right-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: 0;
+}
+.top-tag {
+  display: inline-block;
+  background: #b8f0c8;
+  color: #1a3a2a;
+  font-size: clamp(0.55rem, 1vw, 0.75rem);
+  font-weight: 600;
+  padding: 0.35em 1em;
+  border-radius: 100px;
+  margin-bottom: clamp(0.8rem, 2vw, 1.5rem);
+  width: fit-content;
+}
+h1 {
+  font-size: clamp(1.8rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: #1a1a2e;
+  line-height: 1.2;
+  margin-bottom: clamp(0.5rem, 1vw, 1rem);
+}
+h1 .highlight {
+  color: #7c3aed;
+}
+.subtitle {
+  font-size: clamp(0.7rem, 1.3vw, 1rem);
+  color: #555;
+  line-height: 1.6;
+}
+/* Right side content card */
+.info-card {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.85);
+  border-radius: 16px;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  max-width: min(90%, 350px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+.info-card h3 {
+  font-size: clamp(0.8rem, 1.5vw, 1.1rem);
+  color: #1a1a2e;
+  font-weight: 700;
+  margin-bottom: clamp(0.5rem, 1vw, 1rem);
+}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: clamp(0.6rem, 1.1vw, 0.85rem);
+  color: #444;
+  padding: 0.4em 0;
+}
+.info-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-peach { background: #ff9a56; }
+.dot-mint { background: #4ade80; }
+.dot-purple { background: #a78bfa; }
+@media (max-width: 700px) {
+  .slide { flex-direction: column; }
+  .left-panel, .right-panel { flex: none; height: 50vh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.2s !important;
+  }
+}
+</style>
+</head>
+<body>
+<section class="slide">
+  <div class="left-panel">
+    <div class="top-tag">Vibe Coding 實戰</div>
+    <h1>產險資料分析<br><span class="highlight">車險理賠預測</span></h1>
+    <p class="subtitle">用 AI 工具完成資料科學全流程<br>不需要寫程式，只需要會思考</p>
+  </div>
+  <div class="right-panel">
+    <div class="info-card">
+      <h3>今日三堂課</h3>
+      <div class="info-item"><span class="info-dot dot-peach"></span>第 1 節：EDA 探索資料</div>
+      <div class="info-item"><span class="info-dot dot-mint"></span>第 2 節：建立預測模型</div>
+      <div class="info-item"><span class="info-dot dot-purple"></span>第 3 節：動手挑戰＋報告</div>
+    </div>
+  </div>
+</section>
+</body>
+</html>
